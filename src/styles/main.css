@@ -1,0 +1,361 @@
+body {
+  box-sizing: border-box;
+}
+
+* {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-dark {
+  background: rgba(0, 102, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Morphing Transitions */
+.morph-transition {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width, transform, opacity;
+  transform: translateZ(0); /* Hardware acceleration */
+}
+
+.mobile-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.morph-scale {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.morph-scale:hover {
+  transform: scale(1.02) translateY(-2px);
+}
+
+/* Card Gradients */
+.gradient-blue {
+  background: linear-gradient(135deg, #0066FF 0%, #00D4FF 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%);
+}
+
+.gradient-green {
+  background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+}
+
+.gradient-orange {
+  background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+}
+
+.gradient-pink {
+  background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
+}
+
+.gradient-cyan {
+  background: linear-gradient(135deg, #06B6D4 0%, #22D3EE 100%);
+}
+
+.gradient-red {
+  background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+}
+
+/* Sidebar Active */
+.sidebar-item.active {
+  background: linear-gradient(135deg, #0066FF 0%, #00D4FF 100%);
+  color: white;
+}
+
+.sidebar-item.active svg {
+  color: white;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media print {
+  @page {
+    size: portrait;
+    margin: 20mm;
+  }
+
+  body {
+    background: white !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    color: black !important;
+  }
+
+  .print-header {
+    border-bottom: 2px solid #1e293b;
+    padding-bottom: 15px;
+    margin-bottom: 30px;
+  }
+
+  .print-section {
+    margin-bottom: 25px;
+    page-break-inside: avoid;
+  }
+
+  .print-section-title {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 14px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    color: #1e293b;
+  }
+
+  .print-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .print-label {
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .print-value {
+    color: #000;
+  }
+
+  .signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    margin-top: 60px;
+    page-break-inside: avoid;
+  }
+
+  .signature-box {
+    text-align: center;
+  }
+
+  .signature-space {
+    height: 80px;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+@keyframes pulse-soft {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.4s ease forwards;
+}
+
+/* Stagger animations */
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+
+.stagger-4 {
+  animation-delay: 0.4s;
+}
+
+/* Input Focus */
+.input-modern:focus {
+  outline: none;
+  border-color: #0066FF;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+}
+
+/* Button Hover Effects */
+.btn-primary {
+  background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #0052CC 0%, #003D99 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.4);
+}
+
+/* Status Badge */
+.status-active {
+  background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+}
+
+.status-inactive {
+  background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 500;
+  animation: slideIn 0.3s ease;
+  z-index: 9999;
+  max-width: 400px;
+}
+
+.toast-success {
+  background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+}
+
+.toast-error {
+  background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+}
+
+.toast-warning {
+  background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+}
+
+/* Page Transitions */
+.page-enter {
+  opacity: 0;
+  transform: scale(0.98);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Modal */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+/* Table */
+.table-row:hover {
+  background: linear-gradient(90deg, rgba(0, 102, 255, 0.05) 0%, transparent 100%);
+}
+
+/* Notification dot */
+.notification-dot {
+  animation: pulse-soft 2s infinite;
+}
+
+/* Score Badge */
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-weight: bold;
+  color: white;
+  font-size: 14px;
+}
+
+.score-excellent {
+  background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+}
+
+.score-good {
+  background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+}
+
+.score-average {
+  background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+}
+
+.score-poor {
+  background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+}
