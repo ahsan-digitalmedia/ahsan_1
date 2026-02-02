@@ -61,8 +61,11 @@ export function setupLoginHandlers() {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+            const config = appState.config || {};
+            const adminEmail = config.admin_email || 'admin@sekolah.id';
+            const adminPassword = config.admin_password || 'admin123';
 
-            if (email === 'admin@sekolah.id' && password === 'admin123') {
+            if (email === adminEmail && password === adminPassword) {
                 updateState({
                     currentUser: { name: 'Administrator', email, role: 'admin' },
                     currentUserType: 'admin',

@@ -17,6 +17,8 @@ export const defaultConfig = {
     app_title: 'APLIKASI ADMINISTRASI GURU',
     app_version: 'v1.0.0',
     admin_whatsapp: '6285268474347',
+    admin_email: 'admin@sekolah.id',
+    admin_password: 'admin123',
     primary_color: '#0066FF',
     background_color: '#FFFFFF',
     text_color: '#1E293B',
