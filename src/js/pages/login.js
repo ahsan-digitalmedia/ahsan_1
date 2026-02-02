@@ -97,6 +97,19 @@ export function renderLoginPage() {
                      class="input-modern w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl bg-white/50 focus:bg-white transition-all">
                 </div>
               </div>
+
+              <!-- Remember Me (Guru) -->
+              <div class="flex items-center justify-between px-1">
+                <label class="flex items-center gap-2 cursor-pointer group">
+                  <div class="relative w-5 h-5 flex items-center justify-center">
+                    <input type="checkbox" id="guru-remember" ${appState.rememberMe ? 'checked' : ''} class="peer appearance-none w-5 h-5 border-2 border-slate-300 rounded-lg checked:bg-blue-600 checked:border-blue-600 transition-all cursor-pointer shadow-sm">
+                    <svg class="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <span class="text-xs font-bold text-slate-600 group-hover:text-blue-600 transition-colors">Ingat Saya</span>
+                </label>
+              </div>
             </div>
 
             <!-- Registration Fields (Hidden by default) -->
@@ -164,6 +177,19 @@ export function renderLoginPage() {
                 <input type="password" id="login-password" placeholder="••••••••" 
                    class="input-modern w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl bg-white/50 focus:bg-white transition-all" required>
               </div>
+            </div>
+
+            <!-- Remember Me (Admin) -->
+            <div class="flex items-center justify-between px-1">
+                <label class="flex items-center gap-2 cursor-pointer group">
+                  <div class="relative w-5 h-5 flex items-center justify-center">
+                    <input type="checkbox" id="admin-remember" ${appState.rememberMe ? 'checked' : ''} class="peer appearance-none w-5 h-5 border-2 border-slate-300 rounded-lg checked:bg-blue-600 checked:border-blue-600 transition-all cursor-pointer shadow-sm">
+                    <svg class="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <span class="text-xs font-bold text-slate-600 group-hover:text-blue-600 transition-colors">Ingat Saya</span>
+                </label>
             </div>
             
             <div id="login-error" class="hidden p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm text-center"></div>

@@ -26,13 +26,19 @@ export const defaultConfig = {
     accent_color: '#00D4FF'
 };
 
+// Helper to get from any storage
+function getFromStorage(key) {
+    return localStorage.getItem(key) || sessionStorage.getItem(key);
+}
+
 // Application State
 export const appState = {
     config: { ...defaultConfig },
-    currentPage: localStorage.getItem('guru_current_page') || 'login',
-    currentUserType: localStorage.getItem('guru_user_type'), // 'admin' or 'guru'
-    isLoggedIn: localStorage.getItem('guru_logged_in') === 'true',
-    currentUser: JSON.parse(localStorage.getItem('guru_user') || 'null'),
+    currentPage: getFromStorage('guru_current_page') || 'login',
+    currentUserType: getFromStorage('guru_user_type'), // 'admin' or 'guru'
+    isLoggedIn: getFromStorage('guru_logged_in') === 'true',
+    currentUser: JSON.parse(getFromStorage('guru_user') || 'null'),
+    rememberMe: localStorage.getItem('guru_remember_me') === 'true',
     teachers: [],
     assignments: [],
     students: [],
@@ -62,11 +68,33 @@ export const appState = {
 export function updateState(newState) {
     Object.assign(appState, newState);
 
+    // Determine storage type
+    const storage = appState.rememberMe ? localStorage : sessionStorage;
+
     // Persist specific auth fields
-    if ('isLoggedIn' in newState) localStorage.setItem('guru_logged_in', newState.isLoggedIn);
-    if ('currentUser' in newState) localStorage.setItem('guru_user', JSON.stringify(newState.currentUser));
-    if ('currentUserType' in newState) localStorage.setItem('guru_user_type', newState.currentUserType || '');
-    if ('currentPage' in newState) localStorage.setItem('guru_current_page', newState.currentPage);
+    if ('rememberMe' in newState) {
+        if (newState.rememberMe) {
+            localStorage.setItem('guru_remember_me', 'true');
+        } else {
+            localStorage.removeItem('guru_remember_me');
+        }
+    }
+
+    if ('isLoggedIn' in newState) {
+        storage.setItem('guru_logged_in', newState.isLoggedIn);
+        if (!newState.isLoggedIn) {
+            // Clear all on logout
+            localStorage.removeItem('guru_logged_in');
+            localStorage.removeItem('guru_user');
+            localStorage.removeItem('guru_user_type');
+            localStorage.removeItem('guru_current_page');
+            sessionStorage.clear();
+        }
+    }
+
+    if ('currentUser' in newState) storage.setItem('guru_user', JSON.stringify(newState.currentUser));
+    if ('currentUserType' in newState) storage.setItem('guru_user_type', newState.currentUserType || '');
+    if ('currentPage' in newState) storage.setItem('guru_current_page', newState.currentPage);
 
     return appState;
 }

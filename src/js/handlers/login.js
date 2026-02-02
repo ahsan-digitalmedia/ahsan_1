@@ -61,6 +61,8 @@ export function setupLoginHandlers() {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+            const rememberMe = document.getElementById('admin-remember')?.checked || false;
+
             const config = appState.config || {};
             const adminEmail = config.admin_email || 'admin@sekolah.id';
             const adminPassword = config.admin_password || 'admin123';
@@ -70,6 +72,7 @@ export function setupLoginHandlers() {
                     currentUser: { name: 'Administrator', email, role: 'admin' },
                     currentUserType: 'admin',
                     isLoggedIn: true,
+                    rememberMe: rememberMe,
                     currentPage: 'dashboard'
                 });
                 window.dispatchEvent(new CustomEvent('app-state-changed'));
@@ -163,12 +166,14 @@ export function setupLoginHandlers() {
                         return;
                     }
 
+                    const rememberMe = document.getElementById('guru-remember')?.checked || false;
                     const isProfileIncomplete = !teacher.nip || teacher.nip === '-' || !teacher.subject || teacher.subject === '-' || !teacher.class || !teacher.npsn;
 
                     updateState({
                         currentUser: teacher,
                         currentUserType: 'guru',
                         isLoggedIn: true,
+                        rememberMe: rememberMe,
                         currentPage: 'guru-dashboard'
                     });
 
