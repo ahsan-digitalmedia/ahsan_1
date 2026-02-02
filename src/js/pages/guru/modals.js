@@ -190,7 +190,8 @@ function renderModulAjarModal(mode, item) {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="space-y-1.5">
                   <label class="text-xs font-bold text-slate-500 uppercase ml-1">Nama Guru *</label>
-                  <input type="text" id="modul-teacher-name" value="${item?.modul_teacher_name || currentUser?.name || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white transition-all" required>
+                  <input type="text" id="modul-teacher-name" value="${item?.modul_teacher_name || currentUser?.name || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-100 text-slate-500 cursor-not-allowed font-medium" readonly>
+                  <p class="text-[10px] text-slate-400 italic ml-1">* Diambil dari profil Anda</p>
                 </div>
                 <div class="space-y-1.5">
                   <label class="text-xs font-bold text-slate-500 uppercase ml-1">Mata Pelajaran *</label>
@@ -216,12 +217,7 @@ function renderModulAjarModal(mode, item) {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="space-y-1.5">
                   <label class="text-xs font-bold text-slate-500 uppercase ml-1">Kelas *</label>
-                  <select id="modul-class" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white transition-all" required>
-                    <option value="">Pilih Kelas</option>
-                    ${['1A', '1B', '1C', '2A', '2B', '2C', '3A', '3B', '3C', '4A', '4B', '4C', '5A', '5B', '5C', '6A', '6B', '6C'].map(c =>
-    `<option value="${c}" ${item?.modul_class === c || (mode === 'add' && currentUser?.class === c) ? 'selected' : ''}>Kelas ${c}</option>`
-  ).join('')}
-                  </select>
+                  <input type="text" id="modul-class" value="${item?.modul_class || ''}" placeholder="Cth: 1A, Kelas 1, atau 1/A" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white transition-all" required>
                 </div>
                 <div class="space-y-1.5">
                   <label class="text-xs font-bold text-slate-500 uppercase ml-1">Fase *</label>

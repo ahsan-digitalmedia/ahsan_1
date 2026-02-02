@@ -2,13 +2,14 @@ import { appState } from '../../core/state.js';
 import { formatDate } from '../../core/utils.js';
 
 export function renderGuruAttendancePage() {
-    const { attendances, students, currentUser, selectedDate } = appState;
-    const classAttendances = attendances.filter(a => a.attendance_class === currentUser?.class);
-    const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
-    const today = new Date().toISOString().split('T')[0];
-    const viewDate = selectedDate || today;
+  const { attendances, students, currentUser, selectedDate } = appState;
+  const classAttendances = attendances.filter(a => a.attendance_class === currentUser?.class);
+  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const viewDate = selectedDate || today;
 
-    return `
+  return `
     <div class="animate-fadeIn">
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div class="flex flex-col md:flex-row gap-4 items-end">
@@ -74,22 +75,22 @@ export function renderGuruAttendancePage() {
                   </td>
                 </tr>
               ` : classStudents.map((student, index) => {
-        const studentAttendance = classAttendances.find(a => a.student_id === (student.__backendId || student.id) && a.attendance_date === viewDate);
-        const statusColor = {
-            'hadir': 'text-green-600 bg-green-50',
-            'alpa': 'text-red-600 bg-red-50',
-            'sakit': 'text-yellow-600 bg-yellow-50',
-            'izin': 'text-blue-600 bg-blue-50'
-        };
-        const statusLabel = {
-            'hadir': 'Hadir',
-            'alpa': 'Alpa',
-            'sakit': 'Sakit',
-            'izin': 'Izin'
-        };
-        const currentStatus = studentAttendance?.attendance_status || '';
+    const studentAttendance = classAttendances.find(a => a.student_id === (student.__backendId || student.id) && a.attendance_date === viewDate);
+    const statusColor = {
+      'hadir': 'text-green-600 bg-green-50',
+      'alpa': 'text-red-600 bg-red-50',
+      'sakit': 'text-yellow-600 bg-yellow-50',
+      'izin': 'text-blue-600 bg-blue-50'
+    };
+    const statusLabel = {
+      'hadir': 'Hadir',
+      'alpa': 'Alpa',
+      'sakit': 'Sakit',
+      'izin': 'Izin'
+    };
+    const currentStatus = studentAttendance?.attendance_status || '';
 
-        return `
+    return `
                   <tr class="table-row morph-transition">
                     <td class="px-6 py-4">
                       <div class="flex items-center gap-3">
@@ -127,7 +128,7 @@ export function renderGuruAttendancePage() {
                     </td>
                   </tr>
                 `;
-    }).join('')}
+  }).join('')}
             </tbody>
           </table>
         </div>

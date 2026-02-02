@@ -105,7 +105,8 @@ export function setupGuruAttendanceHandlers() {
     const printBtn = e.target.closest('.print-report-btn');
     if (printBtn) {
       const type = printBtn.getAttribute('data-type');
-      printAttendanceReport(type);
+      const date = document.getElementById('attendance-date')?.value || appState.selectedDate;
+      printAttendanceReport(type, date);
       return;
     }
   };
@@ -126,7 +127,7 @@ export function setupGuruAttendanceHandlers() {
 function printAttendanceReport(type, dateStr) {
   const { students, attendances, currentUser, config } = appState;
   const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
-  const schoolName = config.school_name || 'SDN 1 PONCOWATI';
+  const schoolName = currentUser?.school_name || config.school_name || 'SDN 1 PONCOWATI';
   const teacherName = currentUser?.name || 'Guru Kelas';
   const className = currentUser?.class || '-';
 
@@ -136,7 +137,9 @@ function printAttendanceReport(type, dateStr) {
   let tableRows = '';
   let tableFooter = '';
 
-  const date = new Date(dateStr);
+  const dateInput = dateStr || appState.selectedDate || new Date().toISOString().split('T')[0];
+  const [y, m, d_] = dateInput.split('-').map(Number);
+  const date = new Date(y, m - 1, d_);
 
   if (type === 'daily') {
     title = 'LAPORAN ABSENSI HARIAN SISWA';
@@ -187,12 +190,15 @@ function printAttendanceReport(type, dateStr) {
     const d = new Date(date);
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(d.setDate(diff));
+    const monday = new Date(new Date(d).setDate(diff));
     const weekDates = [];
     for (let i = 0; i < 6; i++) {
       const next = new Date(monday);
       next.setDate(monday.getDate() + i);
-      weekDates.push(next.toISOString().split('T')[0]);
+      const yyyy = next.getFullYear();
+      const mm = String(next.getMonth() + 1).padStart(2, '0');
+      const dd = String(next.getDate()).padStart(2, '0');
+      weekDates.push(`${yyyy}-${mm}-${dd}`);
     }
     dateInfo = `Minggu: ${formatDate(weekDates[0])} s/d ${formatDate(weekDates[5])}`;
     tableHeader = `

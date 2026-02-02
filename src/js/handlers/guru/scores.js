@@ -297,7 +297,7 @@ document.querySelectorAll('.print-score-btn').forEach(btn => {
 function printScoreReport(type) {
     const { students, scores, currentUser, config } = appState;
     const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
-    const schoolName = config.school_name || 'SDN 1 PONCOWATI';
+    const schoolName = currentUser?.school_name || config.school_name || 'SDN 1 PONCOWATI';
     const teacherName = currentUser?.name || 'Guru Kelas';
     const className = currentUser?.class || '-';
     const subjects = SUBJECT_LIST;

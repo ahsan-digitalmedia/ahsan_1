@@ -278,11 +278,15 @@ export function setupModulAjarHandlers() {
 }
 
 async function downloadModulAjarPDF(id) {
-  const { modulAjars, config } = appState;
+  const { modulAjars, config, currentUser } = appState;
   const modul = modulAjars.find(m => (m.type === 'modul_ajar' || !m.type) && (m.__backendId || m.id) == id);
   if (!modul) return;
 
   showToast('Menyiapkan PDF...', 'info');
+
+  const schoolName = currentUser?.school_name || config.school_name || 'SDN 1 PONCOWATI';
+  const teacherName = currentUser?.name || modul.modul_teacher_name;
+  const teacherNip = currentUser?.nip || modul.modul_teacher_nip || '-';
 
   const element = document.createElement('div');
   element.style.padding = '40px';
@@ -293,15 +297,15 @@ async function downloadModulAjarPDF(id) {
     <div style="font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.5;">
       <div style="text-align: center; border-bottom: 3px double #000; margin-bottom: 20px; padding-bottom: 10px;">
         <h2 style="margin: 0; font-size: 18px; font-weight: bold; text-transform: uppercase;">MODUL AJAR KURIKULUM MERDEKA</h2>
-        <h3 style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">${config.school_name}</h3>
+        <h3 style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">${schoolName}</h3>
         <p style="margin: 5px 0 0 0; font-size: 12px;">Tahun Pelajaran ${new Date().getFullYear()}/${new Date().getFullYear() + 1}</p>
       </div>
 
       <div style="margin-bottom: 20px;">
         <h3 style="font-size: 14px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px;">A. Identitas Modul</h3>
         <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
-          <tr><td style="width: 150px; padding: 3px 0;">Nama Penyusun</td><td>: ${modul.modul_teacher_name}</td></tr>
-          <tr><td style="padding: 3px 0;">NIP</td><td>: ${modul.modul_teacher_nip}</td></tr>
+          <tr><td style="width: 150px; padding: 3px 0;">Nama Penyusun</td><td>: ${teacherName}</td></tr>
+          <tr><td style="padding: 3px 0;">NIP</td><td>: ${teacherNip}</td></tr>
           <tr><td style="padding: 3px 0;">Mata Pelajaran</td><td>: ${modul.modul_subject}</td></tr>
           <tr><td style="padding: 3px 0;">Kelas / Fase</td><td>: ${modul.modul_class} / ${modul.modul_fase}</td></tr>
           <tr><td style="padding: 3px 0;">Topik / Bab</td><td>: ${modul.modul_topic}</td></tr>
@@ -370,8 +374,8 @@ async function downloadModulAjarPDF(id) {
         </div>
         <div style="text-align: center; width: 40%;">
           <p style="font-size: 12px; margin-bottom: 60px;">Lampung, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br>Guru Mata Pelajaran</p>
-          <p style="font-weight: bold; text-decoration: underline; font-size: 12px;">${modul.modul_teacher_name}</p>
-          <p style="font-size: 12px;">NIP. ${modul.modul_teacher_nip}</p>
+          <p style="font-weight: bold; text-decoration: underline; font-size: 12px;">${teacherName}</p>
+          <p style="font-size: 12px;">NIP. ${teacherNip}</p>
         </div>
       </div>
     </div>
