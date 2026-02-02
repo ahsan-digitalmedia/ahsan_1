@@ -30,7 +30,8 @@ export function setupMainAppHandlers() {
             const isMobile = window.innerWidth < 1024;
             updateState({
                 currentPage: page,
-                sidebarOpen: isMobile ? false : appState.sidebarOpen
+                sidebarOpen: isMobile ? false : appState.sidebarOpen,
+                showModal: false
             });
             window.dispatchEvent(new CustomEvent('app-state-changed'));
         };

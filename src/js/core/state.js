@@ -15,7 +15,8 @@ export const CLASS_LIST = [
 
 export const defaultConfig = {
     app_title: 'APLIKASI ADMINISTRASI GURU',
-    school_name: 'SD NEGERI 1 PONCOWATI',
+    app_version: 'v1.0.0',
+    admin_whatsapp: '6285268474347',
     primary_color: '#0066FF',
     background_color: '#FFFFFF',
     text_color: '#1E293B',
@@ -24,7 +25,7 @@ export const defaultConfig = {
 };
 
 // Application State
-export let appState = {
+export const appState = {
     config: { ...defaultConfig },
     currentPage: localStorage.getItem('guru_current_page') || 'login',
     currentUserType: localStorage.getItem('guru_user_type'), // 'admin' or 'guru'
@@ -57,7 +58,7 @@ export let appState = {
 
 // Helper to update state
 export function updateState(newState) {
-    appState = { ...appState, ...newState };
+    Object.assign(appState, newState);
 
     // Persist specific auth fields
     if ('isLoggedIn' in newState) localStorage.setItem('guru_logged_in', newState.isLoggedIn);

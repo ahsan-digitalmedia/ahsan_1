@@ -1,5 +1,5 @@
 import './styles/main.css';
-import { appState, updateState } from './js/core/state.js';
+import { appState, updateState, defaultConfig } from './js/core/state.js';
 import { LocalDataSdk } from './js/core/sdk.js';
 import { renderLoginPage } from './js/pages/login.js';
 import { setupLoginHandlers } from './js/handlers/login.js';
@@ -40,15 +40,36 @@ async function initApp() {
 
     const dataHandler = {
         onDataChanged(data) {
+            const isGuru = appState.currentUserType === 'guru' && appState.isLoggedIn;
+            const teacherId = appState.currentUser?.__backendId || appState.currentUser?.id;
+
+            const filterFn = (items, type) => {
+                const filteredByType = items.filter(d => d.type === type);
+                if (!isGuru) return filteredByType;
+
+                // For teachers, filter data where teacher_id matches or where it's a student in their class
+                // Special case for students: filter by class if teacher_id not set
+                if (type === 'student') {
+                    return filteredByType.filter(s => s.teacher_id === teacherId || s.student_class === appState.currentUser?.class);
+                }
+
+                // For other types, only show data created by this teacher
+                return filteredByType.filter(d => d.teacher_id === teacherId);
+            };
+
+            const configRecord = data.find(d => d.type === 'config');
+            const newConfig = configRecord ? Object.assign({}, defaultConfig, configRecord) : Object.assign({}, defaultConfig);
+
             updateState({
-                teachers: data.filter(d => d.type === 'teacher'),
-                assignments: data.filter(d => d.type === 'assignment'),
-                students: data.filter(d => d.type === 'student'),
-                attendances: data.filter(d => d.type === 'attendance'),
-                scores: data.filter(d => d.type === 'score'),
-                teacherAttendances: data.filter(d => d.type === 'teacher_attendance'),
-                journals: data.filter(d => d.type === 'journal'),
-                modulAjars: data.filter(d => d.type === 'modul_ajar')
+                config: newConfig,
+                teachers: data.filter(d => d.type === 'teacher'), // Admin sees all, Guru sees all (for now) or we can filter
+                assignments: filterFn(data, 'assignment'),
+                students: filterFn(data, 'student'),
+                attendances: filterFn(data, 'attendance'),
+                scores: filterFn(data, 'score'),
+                teacherAttendances: filterFn(data, 'teacher_attendance'),
+                journals: filterFn(data, 'journal'),
+                modulAjars: filterFn(data, 'modul_ajar')
             });
 
             if (appState.currentPage !== 'login' && appState.isLoggedIn) {

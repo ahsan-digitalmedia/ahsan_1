@@ -30,176 +30,162 @@ export function setupGuruScoresHandlers() {
     }
 
     const contentArea = document.getElementById('content-area');
-    if (contentArea) {
-        contentArea.addEventListener('click', async (e) => {
-            // Edit Button
-            const editBtn = e.target.closest('.edit-score-btn');
-            if (editBtn) {
-                const id = editBtn.getAttribute('data-id');
-                const score = appState.scores.find(s => (s.__backendId || s.id) == id);
-                if (score) {
-                    updateState({ showModal: true, modalMode: 'edit', editingItem: score });
-                    window.dispatchEvent(new CustomEvent('app-state-changed'));
-                }
-                return;
-            }
+    if (!contentArea) return;
 
-            // Delete Button
-            const deleteBtn = e.target.closest('.delete-score-btn');
-            if (deleteBtn) {
-                if (confirm('Apakah Anda yakin ingin menghapus nilai ini?')) {
-                    const id = deleteBtn.getAttribute('data-id');
-                    const score = appState.scores.find(s => (s.__backendId || s.id) == id);
-                    if (score) {
-                        try {
-                            if (window.dataSdk) await window.dataSdk.delete(score);
-                            showToast('Nilai berhasil dihapus', 'success');
-                            window.dispatchEvent(new CustomEvent('app-state-changed'));
-                        } catch (err) {
-                            showToast('Gagal menghapus nilai', 'error');
-                        }
-                    }
-                }
-                return;
-            }
+    if (contentArea._scoresHandler) {
+        contentArea.removeEventListener('click', contentArea._scoresHandler);
+    }
 
-            // Add button delegation (if inside content area)
-            const addBtn = e.target.closest('#add-score-btn');
-            if (addBtn) {
-                updateState({ showModal: true, modalMode: 'add', editingItem: null });
+    const handler = async (e) => {
+        // Edit Button
+        const editBtn = e.target.closest('.edit-score-btn');
+        if (editBtn) {
+            const id = editBtn.getAttribute('data-id');
+            const score = appState.scores.find(s => (s.__backendId || s.id) == id);
+            if (score) {
+                updateState({ showModal: true, modalMode: 'edit', editingItem: { ...score } });
                 window.dispatchEvent(new CustomEvent('app-state-changed'));
-                return;
             }
+            return;
+        }
 
-            // Import CSV Button
-            const importBtn = e.target.closest('#import-score-csv-btn');
-            if (importBtn) {
-                document.getElementById('import-score-csv-input').click();
-                return;
+        // Delete Button
+        const deleteBtn = e.target.closest('.delete-score-btn');
+        if (deleteBtn) {
+            const id = deleteBtn.getAttribute('data-id');
+            const score = appState.scores.find(s => (s.__backendId || s.id) == id);
+            if (score && confirm('Apakah Anda yakin ingin menghapus nilai ini?')) {
+                try {
+                    if (window.dataSdk) await window.dataSdk.delete(score);
+                    showToast('Nilai berhasil dihapus', 'success');
+                    window.dispatchEvent(new CustomEvent('app-state-changed'));
+                } catch (err) {
+                    showToast('Gagal menghapus nilai', 'error');
+                }
             }
+            return;
+        }
 
-            // Download Template Button
-            const downloadTemplateBtn = e.target.closest('#download-score-template-btn');
-            if (downloadTemplateBtn) {
-                const headers = ['Nama Siswa', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS'];
+        // Add button
+        const addBtn = e.target.closest('#add-score-btn');
+        if (addBtn) {
+            updateState({ showModal: true, modalMode: 'add', editingItem: null });
+            window.dispatchEvent(new CustomEvent('app-state-changed'));
+            return;
+        }
 
-                // Get current students to populate template
-                const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
-                const sampleData = classStudents.map(s => ({
-                    'Nama Siswa': s.student_name,
-                    'NISN': s.student_nisn,
-                    'Mata Pelajaran': appState.filterSubject || 'Matematika',
-                    'Formatif': '',
-                    'Sumatif': '',
-                    'MID': '',
-                    'PAS': ''
-                }));
+        // Import CSV Button
+        const importBtn = e.target.closest('#import-score-csv-btn');
+        if (importBtn) {
+            const input = document.getElementById('import-score-csv-input');
+            if (input) input.click();
+            return;
+        }
 
-                downloadCSV(headers, sampleData.length > 0 ? sampleData : [{ 'Nama Siswa': 'Contoh Siswa', 'NISN': '1234567890', 'Mata Pelajaran': 'Matematika', 'Formatif': 80, 'Sumatif': 85, 'MID': 80, 'PAS': 90 }], 'Template_Nilai.csv');
-                return;
-            }
+        // Download Template Button
+        const downloadTemplateBtn = e.target.closest('#download-score-template-btn');
+        if (downloadTemplateBtn) {
+            const headers = ['Nama Siswa', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS'];
+            const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+            const sampleData = classStudents.map(s => ({
+                'Nama Siswa': s.student_name,
+                'NISN': s.student_nisn,
+                'Mata Pelajaran': appState.filterSubject || 'Matematika',
+                'Formatif': '',
+                'Sumatif': '',
+                'MID': '',
+                'PAS': ''
+            }));
+            downloadCSV(headers, sampleData.length > 0 ? sampleData : [{ 'Nama Siswa': 'Contoh Siswa', 'NISN': '1234567890', 'Mata Pelajaran': 'Matematika', 'Formatif': 80, 'Sumatif': 85, 'MID': 80, 'PAS': 90 }], 'Template_Nilai.csv');
+            return;
+        }
 
-            // Export to Excel (CSV) Button
-            const exportExcelBtn = e.target.closest('#export-excel-btn');
-            if (exportExcelBtn) {
-                const headers = ['Nama Siswa', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS', 'Raport'];
-                const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
-
-                const exportData = [];
-                classStudents.forEach(s => {
-                    const studentId = s.__backendId || s.id;
-                    const studentScores = scores.filter(sc => (sc.type === 'score' || !sc.type) && sc.student_id === studentId);
-
-                    if (studentScores.length > 0) {
-                        studentScores.forEach(sc => {
-                            exportData.push({
-                                'Nama Siswa': s.student_name,
-                                'NISN': s.student_nisn,
-                                'Mata Pelajaran': sc.score_subject,
-                                'Formatif': sc.score_formatif,
-                                'Sumatif': sc.score_sumatif,
-                                'MID': sc.score_mid,
-                                'PAS': sc.score_pas,
-                                'Raport': sc.score_raport || sc.score_value
-                            });
-                        });
-                    } else {
+        // Export Excel Button
+        const exportExcelBtn = e.target.closest('#export-excel-btn');
+        if (exportExcelBtn) {
+            const headers = ['Nama Siswa', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS', 'Raport'];
+            const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+            const exportData = [];
+            classStudents.forEach(s => {
+                const studentId = s.__backendId || s.id;
+                const studentScores = scores.filter(sc => (sc.type === 'score' || !sc.type) && sc.student_id === studentId);
+                if (studentScores.length > 0) {
+                    studentScores.forEach(sc => {
                         exportData.push({
                             'Nama Siswa': s.student_name,
                             'NISN': s.student_nisn,
-                            'Mata Pelajaran': '-',
-                            'Formatif': '-',
-                            'Sumatif': '-',
-                            'MID': '-',
-                            'PAS': '-',
-                            'Raport': '-'
+                            'Mata Pelajaran': sc.score_subject,
+                            'Formatif': sc.score_formatif,
+                            'Sumatif': sc.score_sumatif,
+                            'MID': sc.score_mid,
+                            'PAS': sc.score_pas,
+                            'Raport': sc.score_raport || sc.score_value
                         });
-                    }
-                });
+                    });
+                } else {
+                    exportData.push({
+                        'Nama Siswa': s.student_name,
+                        'NISN': s.student_nisn,
+                        'Mata Pelajaran': '-',
+                        'Formatif': '-',
+                        'Sumatif': '-',
+                        'MID': '-',
+                        'PAS': '-',
+                        'Raport': '-'
+                    });
+                }
+            });
+            downloadCSV(headers, exportData, `Rekap_Nilai_Kelas_${currentUser?.class}.csv`);
+            return;
+        }
 
-                downloadCSV(headers, exportData, `Rekap_Nilai_Kelas_${currentUser?.class}.csv`);
-                return;
-            }
-        });
-    }
+        // Print Buttons
+        const printBtn = e.target.closest('.print-score-btn');
+        if (printBtn) {
+            const type = printBtn.getAttribute('data-type').toLowerCase();
+            printScoreReport(type);
+            return;
+        }
+    };
 
-    // CSV File Change Handler for Scores
+    contentArea.addEventListener('click', handler);
+    contentArea._scoresHandler = handler;
+
+    // CSV File Change Handler
     const csvInput = document.getElementById('import-score-csv-input');
     if (csvInput) {
         csvInput.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = async (event) => {
                 const text = event.target.result;
                 try {
                     const expectedHeaders = ['Nama Siswa', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS'];
                     const data = parseCSV(text, expectedHeaders);
-
                     if (data.length === 0) {
                         showToast('File CSV kosong atau tidak valid', 'error');
                         return;
                     }
-
                     showToast(`Memproses ${data.length} data nilai...`, 'info');
-
                     let successCount = 0;
-                    let skippedCount = 0;
-                    let skippedDetails = [];
-
                     for (const row of data) {
                         const nisn = row['nisn'];
-                        if (!nisn) {
-                            skippedCount++;
-                            continue;
-                        }
-
+                        if (!nisn) continue;
                         const student = students.find(s => s.student_nisn === nisn);
-                        if (!student) {
-                            console.warn(`Siswa dengan NISN ${nisn} tidak ditemukan.`);
-                            skippedCount++;
-                            skippedDetails.push(`NISN ${nisn} tidak terdaftar`);
-                            continue;
-                        }
-
+                        if (!student) continue;
                         const studentId = student.__backendId || student.id;
                         const subject = row['mata pelajaran'];
-
                         const formatif = parseFloat(row['formatif']) || 0;
                         const sumatif = parseFloat(row['sumatif']) || 0;
                         const mid = parseFloat(row['mid']) || 0;
                         const pas = parseFloat(row['pas']) || 0;
-
-                        // Calculate Raport
                         const raportScore = (((formatif * 2) + (sumatif * 4) + (mid * 2) + (pas * 2)) / 10).toFixed(1);
-
                         const existingScore = appState.scores.find(sc =>
                             (sc.type === 'score' || !sc.type) &&
                             sc.student_id === studentId &&
                             sc.score_subject === subject
                         );
-
                         const scoreData = {
                             id: existingScore ? (existingScore.id || existingScore.__backendId) : generateId(),
                             __backendId: existingScore?.__backendId,
@@ -214,107 +200,71 @@ export function setupGuruScoresHandlers() {
                             score_teacher_class: appState.currentUser?.class,
                             score_teacher_nip: appState.currentUser?.nip,
                             score_teacher_name: appState.currentUser?.name,
+                            teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
                             type: 'score'
                         };
-
-                        try {
-                            if (existingScore) {
-                                if (window.dataSdk) await window.dataSdk.update(scoreData);
-                            } else {
-                                if (window.dataSdk) await window.dataSdk.create(scoreData);
-                            }
-                            successCount++;
-                        } catch (err) {
-                            console.error('Error saving score:', err);
-                            skippedCount++;
-                            skippedDetails.push(`Gagal simpan: ${row['nama siswa'] || nisn}`);
+                        if (existingScore) {
+                            if (window.dataSdk) await window.dataSdk.update(scoreData);
+                        } else {
+                            if (window.dataSdk) await window.dataSdk.create(scoreData);
                         }
+                        successCount++;
                     }
-
-                    if (skippedCount > 0) {
-                        let msg = `${successCount} berhasil, ${skippedCount} gagal/dilewati.`;
-                        if (skippedDetails.length > 0) {
-                            msg += `\nDetail: ${skippedDetails.slice(0, 3).join(', ')}`;
-                            if (skippedDetails.length > 3) msg += '...';
-                        }
-                        alert(msg); // Use alert for more visibility on errors
-                        // showToast(msg, 'warning');
-                    } else {
-                        showToast(`${successCount} data nilai berhasil disimpan`, 'success');
-                    }
-
+                    showToast(`${successCount} data nilai berhasil disimpan`, 'success');
                     window.dispatchEvent(new CustomEvent('app-state-changed'));
                 } catch (err) {
                     showToast(err.message || 'Gagal mengimpor CSV', 'error');
-                    console.error('Import Score CSV Error:', err);
                 }
-                csvInput.value = ''; // Reset
+                csvInput.value = '';
             };
             reader.readAsText(file);
         };
     }
 
-    // Modal Handlers
-    const setupModalHandlers = () => {
+    if (appState.showModal) {
         const closeScoBtn = document.getElementById('close-score-modal');
         const cancelScoBtn = document.getElementById('cancel-score-modal');
         const saveScoBtn = document.getElementById('save-score-btn');
-
         if (closeScoBtn) closeScoBtn.onclick = closeModal;
         if (cancelScoBtn) cancelScoBtn.onclick = closeModal;
 
-        // Live Preview
-        const scoreInputs = document.querySelectorAll('.score-input');
         const previewEl = document.getElementById('modal-score-raport-preview');
-
-        function calculateRaport() {
-            const f = parseFloat(document.getElementById('modal-score-formatif').value) || 0;
-            const s = parseFloat(document.getElementById('modal-score-sumatif').value) || 0;
-            const m = parseFloat(document.getElementById('modal-score-mid').value) || 0;
-            const p = parseFloat(document.getElementById('modal-score-pas').value) || 0;
-
+        const calculateRaport = () => {
+            const f = parseFloat(document.getElementById('modal-score-formatif')?.value) || 0;
+            const s = parseFloat(document.getElementById('modal-score-sumatif')?.value) || 0;
+            const m = parseFloat(document.getElementById('modal-score-mid')?.value) || 0;
+            const p = parseFloat(document.getElementById('modal-score-pas')?.value) || 0;
             const raport = ((f * 2) + (s * 4) + (m * 2) + (p * 2)) / 10;
             if (previewEl) previewEl.textContent = raport.toFixed(1);
             return raport.toFixed(1);
-        }
+        };
 
-        scoreInputs.forEach(input => {
+        document.querySelectorAll('.score-input').forEach(input => {
             input.oninput = calculateRaport;
         });
 
         if (saveScoBtn) {
             saveScoBtn.onclick = async () => {
                 if (saveScoBtn.disabled) return;
+                const form = document.getElementById('score-form');
+                if (!form.reportValidity()) return;
                 saveScoBtn.disabled = true;
 
-                const form = document.getElementById('score-form');
-                if (!form.reportValidity()) {
-                    saveScoBtn.disabled = false;
-                    return;
-                }
-
-                const studentId = document.getElementById('modal-score-student').value;
-                const subject = document.getElementById('modal-score-subject').value;
-                const formatif = parseFloat(document.getElementById('modal-score-formatif').value) || 0;
-                const sumatif = parseFloat(document.getElementById('modal-score-sumatif').value) || 0;
-                const mid = parseFloat(document.getElementById('modal-score-mid').value) || 0;
-                const pas = parseFloat(document.getElementById('modal-score-pas').value) || 0;
-                const raportScore = calculateRaport();
-
                 const scoreData = {
-                    student_id: studentId,
-                    score_subject: subject,
-                    score_formatif: formatif,
-                    score_sumatif: sumatif,
-                    score_mid: mid,
-                    score_pas: pas,
-                    score_raport: raportScore,
-                    score_value: raportScore,
+                    student_id: document.getElementById('modal-score-student').value,
+                    score_subject: document.getElementById('modal-score-subject').value,
+                    score_formatif: parseFloat(document.getElementById('modal-score-formatif').value) || 0,
+                    score_sumatif: parseFloat(document.getElementById('modal-score-sumatif').value) || 0,
+                    score_mid: parseFloat(document.getElementById('modal-score-mid').value) || 0,
+                    score_pas: parseFloat(document.getElementById('modal-score-pas').value) || 0,
+                    score_raport: calculateRaport(),
                     score_teacher_class: appState.currentUser?.class,
                     score_teacher_nip: appState.currentUser?.nip,
                     score_teacher_name: appState.currentUser?.name,
+                    teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
                     type: 'score'
                 };
+                scoreData.score_value = scoreData.score_raport;
 
                 try {
                     if (appState.modalMode === 'add') {
@@ -334,17 +284,15 @@ export function setupGuruScoresHandlers() {
                 }
             };
         }
-    };
-
-    if (appState.showModal) setupModalHandlers();
-
-    document.querySelectorAll('.print-score-btn').forEach(btn => {
-        btn.onclick = () => {
-            const type = btn.getAttribute('data-type').toLowerCase();
-            printScoreReport(type);
-        };
-    });
+    }
 }
+
+document.querySelectorAll('.print-score-btn').forEach(btn => {
+    btn.onclick = () => {
+        const type = btn.getAttribute('data-type').toLowerCase();
+        printScoreReport(type);
+    };
+});
 
 function printScoreReport(type) {
     const { students, scores, currentUser, config } = appState;

@@ -1,9 +1,9 @@
 import { appState } from '../../core/state.js';
 
 export function renderTeachersPage() {
-    const { teachers } = appState;
+  const { teachers } = appState;
 
-    return `
+  return `
     <div class="animate-fadeIn">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -51,20 +51,27 @@ export function renderTeachersPage() {
                     </div>
                   </td>
                   <td class="px-6 py-4">
-                    <div class="text-sm text-slate-800 font-medium">NIP: ${teacher.nip}</div>
+                    <div class="text-sm text-slate-800 font-medium">NIP: ${teacher.nip || '-'}</div>
                     <div class="text-xs text-slate-500">Telp: ${teacher.phone || '-'}</div>
                   </td>
                   <td class="px-6 py-4">
-                    <div class="text-sm text-slate-800 font-medium">Kelas ${teacher.class}</div>
+                    <div class="text-sm text-slate-800 font-medium">Kelas ${teacher.class || '-'}</div>
                     <div class="text-xs text-slate-500">${teacher.subject || '-'}</div>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-lg ${teacher.status === 'active' ? 'status-active' : 'status-inactive'} text-white">
-                      ${teacher.status === 'active' ? 'Aktif' : 'Non-aktif'}
+                    <span class="inline-flex px-2 py-1 text-[10px] font-bold uppercase rounded-lg ${teacher.status === 'active' ? 'bg-emerald-100 text-emerald-700' : (teacher.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700')}">
+                      ${teacher.status === 'active' ? 'Aktif' : (teacher.status === 'pending' ? 'Menunggu' : 'Non-aktif')}
                     </span>
                   </td>
                   <td class="px-6 py-4 text-right">
-                    <div class="flex justify-end gap-2">
+                    <div class="flex justify-end gap-2 text-blue-100">
+                      ${teacher.status === 'pending' ? `
+                        <button class="approve-btn p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" data-id="${teacher.__backendId || teacher.id}" title="Setujui">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                        </button>
+                      ` : ''}
                       <button class="edit-btn p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" data-id="${teacher.__backendId || teacher.id}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>

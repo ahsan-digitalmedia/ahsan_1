@@ -1,10 +1,10 @@
 import { appState, defaultConfig } from '../../core/state.js';
 
 export function renderSettingsPage() {
-    const config = appState.config || defaultConfig;
-    const { currentUser } = appState;
+  const config = appState.config || defaultConfig;
+  const { currentUser } = appState;
 
-    return `
+  return `
     <div class="animate-fadeIn max-w-2xl">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-6 border-b border-slate-100 bg-slate-50/50">
@@ -17,8 +17,17 @@ export function renderSettingsPage() {
             <input type="text" id="settings-title" value="${config.app_title}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm" placeholder="Cth: Aplikasi Guru SD">
           </div>
           <div class="group">
-            <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Nama Sekolah</label>
-            <input type="text" id="settings-school" value="${config.school_name}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm" placeholder="Cth: SDN 1 Poncowati">
+            <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Versi Aplikasi</label>
+            <input type="text" id="settings-version" value="${config.app_version || 'v1.0.0'}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm" placeholder="Cth: v1.0.0">
+          </div>
+          <div class="group">
+            <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Nomor WhatsApp Admin</label>
+            <input type="text" id="settings-whatsapp" value="${config.admin_whatsapp || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm" placeholder="Cth: 08123456789 (Tanpa + atau -)">
+          </div>
+          <div class="group">
+            <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Pengumuman / Teks Berjalan</label>
+            <textarea id="settings-announcement" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm h-24 resize-none" placeholder="Masukkan pengumuman yang akan muncul di halaman login...">${config.announcement || ''}</textarea>
+            <p class="text-[10px] text-slate-400 mt-1.5">* Kosongkan jika tidak ingin ada pengumuman</p>
           </div>
           <button id="save-settings-btn" class="btn-primary w-full md:w-auto px-8 py-3 rounded-xl text-white font-bold shadow-lg hover:shadow-blue-200/50 transition-all active:scale-[0.98]">
             Simpan Konfigurasi

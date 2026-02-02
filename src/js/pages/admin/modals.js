@@ -31,6 +31,14 @@ function renderTeacherModal(mode, item) {
               <label class="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap *</label>
               <input type="text" id="modal-name" value="${item?.name || ''}" placeholder="Nama lengkap" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Nama Sekolah *</label>
+              <input type="text" id="modal-school" value="${item?.school_name || ''}" placeholder="Cth: SDN 01 Poncowati" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">NPSN Sekolah *</label>
+              <input type="text" id="modal-npsn" value="${item?.npsn || ''}" placeholder="Cth: 108XXXXX" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
+            </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">NIP (18 digit) *</label>
@@ -38,10 +46,7 @@ function renderTeacherModal(mode, item) {
               </div>
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Kelas *</label>
-                <select id="modal-class" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
-                  <option value="">Pilih Kelas</option>
-                  ${classes.map(c => `<option value="${c}" ${item?.class === c ? 'selected' : ''}>${c}</option>`).join('')}
-                </select>
+                <input type="text" id="modal-class" value="${item?.class || ''}" placeholder="Cth: 1 atau 1a" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">

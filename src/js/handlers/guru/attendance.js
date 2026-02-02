@@ -2,95 +2,124 @@ import { appState, updateState } from '../../core/state.js';
 import { showToast, generateId, formatDate } from '../../core/utils.js';
 
 export function setupGuruAttendanceHandlers() {
+  const contentArea = document.getElementById('content-area');
+  if (!contentArea) return;
+
+  if (contentArea._attendanceHandler) {
+    contentArea.removeEventListener('click', contentArea._attendanceHandler);
+  }
+
+  const handler = async (e) => {
+    // Attendance Status Buttons
+    const statusBtn = e.target.closest('.set-attendance-btn');
+    if (statusBtn) {
+      const studentId = statusBtn.getAttribute('data-student-id');
+      const status = statusBtn.getAttribute('data-status');
+      const date = document.getElementById('attendance-date').value;
+
+      try {
+        const existing = appState.attendances.find(a =>
+          a.student_id == studentId && a.attendance_date === date
+        );
+
+        const attendanceData = {
+          id: existing ? (existing.id || existing.__backendId) : generateId(),
+          __backendId: existing?.__backendId,
+          student_id: studentId,
+          attendance_date: date,
+          attendance_status: status,
+          attendance_class: appState.currentUser?.class,
+          teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
+          type: 'attendance'
+        };
+
+        if (existing) {
+          if (window.dataSdk) await window.dataSdk.update(attendanceData);
+        } else {
+          if (window.dataSdk) await window.dataSdk.create(attendanceData);
+        }
+        window.dispatchEvent(new CustomEvent('app-state-changed'));
+      } catch (err) {
+        showToast('Gagal mencatat absensi', 'error');
+      }
+      return;
+    }
+
+    // Mark All Present Button
+    const markAllBtn = e.target.closest('#mark-all-present-btn');
+    if (markAllBtn) {
+      const date = document.getElementById('attendance-date').value;
+      const classStudents = appState.students.filter(s =>
+        (s.type === 'student' || !s.type) && s.student_class === appState.currentUser?.class
+      );
+
+      if (classStudents.length === 0) {
+        showToast('Tidak ada siswa di kelas ini', 'error');
+        return;
+      }
+
+      if (!confirm(`Hadirkan semua (${classStudents.length}) siswa untuk tanggal ${date}?`)) return;
+
+      markAllBtn.disabled = true;
+      const originalText = markAllBtn.innerHTML;
+      markAllBtn.innerHTML = 'Memproses...';
+
+      try {
+        for (const student of classStudents) {
+          const studentId = student.__backendId || student.id;
+          const existing = appState.attendances.find(a =>
+            a.student_id == studentId && a.attendance_date === date
+          );
+
+          const attendanceData = {
+            id: existing ? (existing.id || existing.__backendId) : generateId(),
+            __backendId: existing?.__backendId,
+            student_id: studentId,
+            attendance_date: date,
+            attendance_status: 'hadir',
+            attendance_class: appState.currentUser?.class,
+            teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
+            type: 'attendance'
+          };
+
+          if (existing) {
+            if (existing.attendance_status !== 'hadir') {
+              if (window.dataSdk) await window.dataSdk.update(attendanceData);
+            }
+          } else {
+            if (window.dataSdk) await window.dataSdk.create(attendanceData);
+          }
+        }
+        showToast('Semua siswa berhasil dihadirkan');
+        window.dispatchEvent(new CustomEvent('app-state-changed'));
+      } catch (err) {
+        showToast('Gagal memproses absensi massal', 'error');
+      } finally {
+        markAllBtn.disabled = false;
+        markAllBtn.innerHTML = originalText;
+      }
+      return;
+    }
+
+    // Print Report Button
+    const printBtn = e.target.closest('.print-report-btn');
+    if (printBtn) {
+      const type = printBtn.getAttribute('data-type');
+      printAttendanceReport(type);
+      return;
+    }
+  };
+
+  contentArea.addEventListener('click', handler);
+  contentArea._attendanceHandler = handler;
+
+  // Date Change Handler
   const dateInput = document.getElementById('attendance-date');
-  const markAllBtn = document.getElementById('mark-all-present-btn');
   if (dateInput) {
     dateInput.onchange = (e) => {
       updateState({ selectedDate: e.target.value });
       window.dispatchEvent(new CustomEvent('app-state-changed'));
     };
-  }
-
-  if (markAllBtn) {
-    markAllBtn.onclick = async () => {
-      if (markAllBtn.disabled) return;
-      markAllBtn.disabled = true;
-      const classStudents = appState.students.filter(s => (s.type === 'student' || !s.type) && s.student_class === appState.currentUser?.class);
-      const date = appState.selectedDate || new Date().toISOString().split('T')[0];
-
-      try {
-        for (const s of classStudents) {
-          const studentId = s.__backendId || s.id;
-          const existing = appState.attendances.find(a => a.student_id === studentId && a.attendance_date === date);
-          const data = {
-            student_id: studentId,
-            attendance_date: date,
-            attendance_status: 'hadir',
-            attendance_class: appState.currentUser?.class,
-            type: 'attendance'
-          };
-
-          if (existing) {
-            data.id = existing.id || existing.__backendId;
-            data.__backendId = existing.__backendId;
-            if (window.dataSdk) await window.dataSdk.update(data);
-          } else {
-            data.id = generateId();
-            if (window.dataSdk) await window.dataSdk.create(data);
-          }
-        }
-        showToast('Semua siswa ditandai hadir', 'success');
-        window.dispatchEvent(new CustomEvent('app-state-changed'));
-      } catch (err) {
-        showToast('Gagal memproses absensi', 'error');
-        markAllBtn.disabled = false;
-      }
-    };
-  }
-
-  const contentArea = document.getElementById('content-area');
-  if (contentArea) {
-    contentArea.addEventListener('click', async (e) => {
-      // Set Attendance Button (H, S, I, A)
-      const attBtn = e.target.closest('.set-attendance-btn');
-      if (attBtn) {
-        const studentId = attBtn.getAttribute('data-student-id');
-        const status = attBtn.getAttribute('data-status');
-        const date = appState.selectedDate || new Date().toISOString().split('T')[0];
-
-        const existing = appState.attendances.find(a => a.student_id === studentId && a.attendance_date === date);
-        const data = {
-          student_id: studentId,
-          attendance_date: date,
-          attendance_status: status,
-          attendance_class: appState.currentUser?.class,
-          type: 'attendance'
-        };
-
-        try {
-          if (existing) {
-            data.id = existing.id || existing.__backendId;
-            data.__backendId = existing.__backendId;
-            if (window.dataSdk) await window.dataSdk.update(data);
-          } else {
-            data.id = generateId();
-            if (window.dataSdk) await window.dataSdk.create(data);
-          }
-          window.dispatchEvent(new CustomEvent('app-state-changed'));
-        } catch (err) {
-          showToast('Gagal mencatat absensi', 'error');
-        }
-        return;
-      }
-
-      // Print Report Buttons
-      const printBtn = e.target.closest('.print-report-btn');
-      if (printBtn) {
-        const type = printBtn.getAttribute('data-type');
-        printAttendanceReport(type, appState.selectedDate || new Date().toISOString().split('T')[0]);
-        return;
-      }
-    });
   }
 }
 

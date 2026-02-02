@@ -4,11 +4,18 @@ import { parseCSV, downloadCSV } from '../../core/csv-util.js';
 import html2pdf from 'html2pdf.js';
 
 export function setupModulAjarHandlers() {
-  const { modulAjars, currentUser } = appState;
+  const { currentUser } = appState;
+  const contentArea = document.getElementById('content-area');
+  if (!contentArea) return;
 
-  const addModulBtn = document.getElementById('add-modul-btn');
-  if (addModulBtn) {
-    addModulBtn.onclick = () => {
+  if (contentArea._modulHandler) {
+    contentArea.removeEventListener('click', contentArea._modulHandler);
+  }
+
+  const handler = async (e) => {
+    // Add Button
+    const addModulBtn = e.target.closest('#add-modul-btn');
+    if (addModulBtn) {
       updateState({
         showModal: true,
         modalMode: 'add',
@@ -20,93 +27,97 @@ export function setupModulAjarHandlers() {
         }
       });
       window.dispatchEvent(new CustomEvent('app-state-changed'));
-    };
-  }
+      return;
+    }
 
-  const contentArea = document.getElementById('content-area');
-  if (contentArea) {
-    contentArea.addEventListener('click', async (e) => {
-      // Edit Button
-      const editBtn = e.target.closest('.edit-modul-btn');
-      if (editBtn) {
-        const id = editBtn.getAttribute('data-id');
-        const item = appState.modulAjars.find(m => (m.__backendId || m.id) == id);
-        if (item) {
-          updateState({
-            showModal: true,
-            modalMode: 'edit',
-            currentModulStep: 1,
-            editingItem: { ...item }
-          });
+    // Edit Button
+    const editBtn = e.target.closest('.edit-modul-btn');
+    if (editBtn) {
+      const id = editBtn.getAttribute('data-id');
+      const item = appState.modulAjars.find(m => (m.__backendId || m.id) == id);
+      if (item) {
+        updateState({
+          showModal: true,
+          modalMode: 'edit',
+          currentModulStep: 1,
+          editingItem: { ...item }
+        });
+        window.dispatchEvent(new CustomEvent('app-state-changed'));
+      }
+      return;
+    }
+
+    // Delete Button
+    const deleteBtn = e.target.closest('.delete-modul-btn');
+    if (deleteBtn) {
+      const id = deleteBtn.getAttribute('data-id');
+      const item = appState.modulAjars.find(m => (m.__backendId || m.id) == id);
+      if (item && confirm('Apakah Anda yakin ingin menghapus modul ini?')) {
+        try {
+          if (window.dataSdk) await window.dataSdk.delete(item);
+          showToast('Modul berhasil dihapus', 'success');
           window.dispatchEvent(new CustomEvent('app-state-changed'));
+        } catch (err) {
+          showToast('Gagal menghapus modul', 'error');
         }
-        return;
       }
+      return;
+    }
 
-      // Delete Button
-      const deleteBtn = e.target.closest('.delete-modul-btn');
-      if (deleteBtn) {
-        if (confirm('Apakah Anda yakin ingin menghapus modul ini?')) {
-          const id = deleteBtn.getAttribute('data-id');
-          const item = appState.modulAjars.find(m => (m.__backendId || m.id) == id);
-          if (item) {
-            try {
-              if (window.dataSdk) await window.dataSdk.delete(item);
-              showToast('Modul berhasil dihapus', 'success');
-              window.dispatchEvent(new CustomEvent('app-state-changed'));
-            } catch (err) {
-              console.error('Delete Error:', err);
-              showToast('Gagal menghapus modul', 'error');
-            }
-          }
-        }
-        return;
-      }
+    // Download PDF Button
+    const downloadBtn = e.target.closest('.download-pdf-btn');
+    if (downloadBtn) {
+      const id = downloadBtn.getAttribute('data-id');
+      downloadModulAjarPDF(id);
+      return;
+    }
 
-      // Download PDF Button
-      const downloadBtn = e.target.closest('.download-pdf-btn');
-      if (downloadBtn) {
-        const id = downloadBtn.getAttribute('data-id');
-        downloadModulAjarPDF(id);
-        return;
-      }
+    // Import CSV Button
+    const importBtn = e.target.closest('#import-modul-csv-btn');
+    if (importBtn) {
+      document.getElementById('import-modul-csv-input').click();
+      return;
+    }
 
-      // Import CSV Button
-      const importBtn = e.target.closest('#import-modul-csv-btn');
-      if (importBtn) {
-        document.getElementById('import-modul-csv-input').click();
-        return;
-      }
+    // Download Template Button
+    const downloadTemplateBtn = e.target.closest('#download-modul-template-btn');
+    if (downloadTemplateBtn) {
+      const headers = [
+        'Mata Pelajaran', 'Topik', 'Kelas', 'Fase', 'Alokasi Waktu',
+        'Identifikasi Sasaran', 'Tujuan Pembelajaran', 'Media Pembelajaran',
+        'Langkah Pendahuluan', 'Langkah Kegiatan Inti', 'Langkah Penutup',
+        'Asesmen', 'Refleksi', 'Lampiran'
+      ];
+      const sampleData = [{
+        'Mata Pelajaran': 'Matematika',
+        'Topik': 'Penjumlahan Bilangan',
+        'Kelas': '1A',
+        'Fase': 'A',
+        'Alokasi Waktu': '2 x 35 Menit',
+        'Identifikasi Sasaran': 'Siswa kelas 1 yang baru mengenal angka',
+        'Tujuan Pembelajaran': 'Siswa dapat menjumlahkan angka 1-10',
+        'Media Pembelajaran': 'Kartu angka, papan tulis',
+        'Langkah Pendahuluan': 'Salam, absensi, apersepsi penjumlahan 1-5',
+        'Langkah Kegiatan Inti': '1. Menjelaskan konsep\n2. Latihan soal bersama\n3. Kerja kelompok',
+        'Langkah Penutup': 'Evaluasi, PR halaman 12, doa penutup',
+        'Asesmen': 'Tes tertulis mandiri',
+        'Refleksi': 'Apakah siswa antusias?',
+        'Lampiran': 'Lembar kerja siswa'
+      }];
+      downloadCSV(headers, sampleData, 'Template_Modul_Ajar.csv');
+      return;
+    }
+  };
 
-      // Download Template Button
-      const downloadTemplateBtn = e.target.closest('#download-modul-template-btn');
-      if (downloadTemplateBtn) {
-        const headers = [
-          'Mata Pelajaran', 'Topik', 'Kelas', 'Fase', 'Alokasi Waktu',
-          'Identifikasi Sasaran', 'Tujuan Pembelajaran', 'Media Pembelajaran',
-          'Langkah Pendahuluan', 'Langkah Kegiatan Inti', 'Langkah Penutup',
-          'Asesmen', 'Refleksi', 'Lampiran'
-        ];
-        const sampleData = [{
-          'Mata Pelajaran': 'Matematika',
-          'Topik': 'Penjumlahan Bilangan',
-          'Kelas': '1A',
-          'Fase': 'A',
-          'Alokasi Waktu': '2 x 35 Menit',
-          'Identifikasi Sasaran': 'Siswa kelas 1 yang baru mengenal angka',
-          'Tujuan Pembelajaran': 'Siswa dapat menjumlahkan angka 1-10',
-          'Media Pembelajaran': 'Kartu angka, papan tulis',
-          'Langkah Pendahuluan': 'Salam, absensi, apersepsi penjumlahan 1-5',
-          'Langkah Kegiatan Inti': '1. Menjelaskan konsep\n2. Latihan soal bersama\n3. Kerja kelompok',
-          'Langkah Penutup': 'Evaluasi, PR halaman 12, doa penutup',
-          'Asesmen': 'Tes tertulis mandiri',
-          'Refleksi': 'Apakah siswa antusias?',
-          'Lampiran': 'Lembar kerja siswa'
-        }];
-        downloadCSV(headers, sampleData, 'Template_Modul_Ajar.csv');
-        return;
-      }
-    });
+  contentArea.addEventListener('click', handler);
+  contentArea._modulHandler = handler;
+
+  const filterSelect = document.getElementById('modul-filter-subject');
+  if (filterSelect) {
+    filterSelect.onchange = (e) => {
+      updateState({ filterSubject: e.target.value });
+      window.dispatchEvent(new CustomEvent('app-state-changed'));
+    };
   }
 
   // CSV File Change Handler for Modul Ajar
@@ -169,6 +180,7 @@ export function setupModulAjarHandlers() {
               modul_dimensions: existingModul?.modul_dimensions || [],
               modul_teacher_name: currentUser?.name || '',
               modul_teacher_nip: currentUser?.nip || '',
+              teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
               type: 'modul_ajar'
             };
 
@@ -188,14 +200,6 @@ export function setupModulAjarHandlers() {
         csvInput.value = ''; // Reset
       };
       reader.readAsText(file);
-    };
-  }
-
-  const filterSelect = document.getElementById('modul-filter-subject');
-  if (filterSelect) {
-    filterSelect.onchange = (e) => {
-      updateState({ filterSubject: e.target.value });
-      window.dispatchEvent(new CustomEvent('app-state-changed'));
     };
   }
 
@@ -225,13 +229,7 @@ export function setupModulAjarHandlers() {
       }
 
       saveModulBtn.disabled = true;
-      saveModulBtn.innerHTML = `
-                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Menyimpan...</span>
-            `;
+      saveModulBtn.innerHTML = `Menyimpan...`;
 
       const modulData = {
         ...appState.editingItem,
@@ -253,6 +251,7 @@ export function setupModulAjarHandlers() {
         modul_attachments: document.getElementById('modul-attachments').value,
         modul_teacher_name: document.getElementById('modul-teacher-name').value,
         modul_teacher_nip: currentUser?.nip || '',
+        teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
         type: 'modul_ajar'
       };
 
@@ -272,10 +271,7 @@ export function setupModulAjarHandlers() {
         console.error('Save Modul Error:', err);
         showToast('Gagal menyimpan modul', 'error');
         saveModulBtn.disabled = false;
-        saveModulBtn.innerHTML = `
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 0-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                    <span>Simpan Modul Ajar</span>
-                `;
+        saveModulBtn.innerHTML = `Simpan Modul Ajar`;
       }
     };
   }

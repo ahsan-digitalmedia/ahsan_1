@@ -4,79 +4,76 @@ import { parseCSV, downloadCSV } from '../../core/csv-util.js';
 
 export function setupGuruStudentsHandlers() {
     const contentArea = document.getElementById('content-area');
-    if (contentArea) {
-        contentArea.addEventListener('click', async (e) => {
-            // Edit Button
-            // Edit Button
-            const editBtn = e.target.closest('.edit-student-btn');
-            if (editBtn) {
-                const id = editBtn.getAttribute('data-id');
-                console.log('Edit clicked for ID:', id);
+    if (!contentArea) return;
 
-                // Robust find logic: check string equality for both id and __backendId
-                const student = appState.students.find(s =>
-                    String(s.__backendId) === String(id) || String(s.id) === String(id)
-                );
-
-                if (student) {
-                    console.log('Found student:', student);
-                    updateState({ showModal: true, modalMode: 'edit', editingItem: student });
-                    window.dispatchEvent(new CustomEvent('app-state-changed'));
-                } else {
-                    console.error('Student not found for ID:', id);
-                    console.log('Available students:', appState.students);
-                    alert('Gagal membuka edit: Data siswa tidak ditemukan di memori.');
-                }
-                return;
-            }
-
-            // Delete Button
-            const deleteBtn = e.target.closest('.delete-student-btn');
-            if (deleteBtn) {
-                if (confirm('Apakah Anda yakin ingin menghapus siswa ini?')) {
-                    const id = deleteBtn.getAttribute('data-id');
-                    const student = appState.students.find(s => (s.__backendId || s.id) == id);
-                    if (student) {
-                        try {
-                            if (window.dataSdk) await window.dataSdk.delete(student);
-                            showToast('Siswa berhasil dihapus');
-                            window.dispatchEvent(new CustomEvent('app-state-changed'));
-                        } catch (err) {
-                            showToast('Gagal menghapus siswa', 'error');
-                        }
-                    }
-                }
-                return;
-            }
-
-            // Add Button delegation
-            const addBtn = e.target.closest('#add-student-btn');
-            if (addBtn) {
-                updateState({ showModal: true, modalMode: 'add', editingItem: null });
-                window.dispatchEvent(new CustomEvent('app-state-changed'));
-                return;
-            }
-
-            // Import CSV Button
-            const importBtn = e.target.closest('#import-csv-btn');
-            if (importBtn) {
-                document.getElementById('import-csv-input').click();
-                return;
-            }
-
-            // Download Template Button
-            const downloadTemplateBtn = e.target.closest('#download-template-btn');
-            if (downloadTemplateBtn) {
-                const headers = ['Nama Siswa', 'NISN', 'NIS', 'Jenis Kelamin', 'Tanggal Lahir'];
-                const sampleData = [
-                    { 'Nama Siswa': 'Budi Santoso', 'NISN': '1234567890', 'NIS': '1001', 'Jenis Kelamin': 'L', 'Tanggal Lahir': '2015-05-20' },
-                    { 'Nama Siswa': 'Siti Aminah', 'NISN': '1234567891', 'NIS': '1002', 'Jenis Kelamin': 'P', 'Tanggal Lahir': '2015-06-15' }
-                ];
-                downloadCSV(headers, sampleData, 'Template_Siswa.csv');
-                return;
-            }
-        });
+    // Remove old listener if exists to prevent duplication
+    if (contentArea._studentsHandler) {
+        contentArea.removeEventListener('click', contentArea._studentsHandler);
     }
+
+    const handler = async (e) => {
+        // Edit Button
+        const editBtn = e.target.closest('.edit-student-btn');
+        if (editBtn) {
+            const id = editBtn.getAttribute('data-id');
+            const student = appState.students.find(s =>
+                String(s.__backendId) === String(id) || String(s.id) === String(id)
+            );
+
+            if (student) {
+                updateState({ showModal: true, modalMode: 'edit', editingItem: { ...student } });
+                window.dispatchEvent(new CustomEvent('app-state-changed'));
+            }
+            return;
+        }
+
+        // Delete Button
+        const deleteBtn = e.target.closest('.delete-student-btn');
+        if (deleteBtn) {
+            const id = deleteBtn.getAttribute('data-id');
+            const student = appState.students.find(s => (s.__backendId || s.id) == id);
+            if (student && confirm('Apakah Anda yakin ingin menghapus siswa ini?')) {
+                try {
+                    if (window.dataSdk) await window.dataSdk.delete(student);
+                    showToast('Siswa berhasil dihapus');
+                    window.dispatchEvent(new CustomEvent('app-state-changed'));
+                } catch (err) {
+                    showToast('Gagal menghapus siswa', 'error');
+                }
+            }
+            return;
+        }
+
+        // Add Button
+        const addBtn = e.target.closest('#add-student-btn');
+        if (addBtn) {
+            updateState({ showModal: true, modalMode: 'add', editingItem: null });
+            window.dispatchEvent(new CustomEvent('app-state-changed'));
+            return;
+        }
+
+        // Import CSV Button
+        const importBtn = e.target.closest('#import-csv-btn');
+        if (importBtn) {
+            document.getElementById('import-csv-input').click();
+            return;
+        }
+
+        // Download Template Button
+        const downloadTemplateBtn = e.target.closest('#download-template-btn');
+        if (downloadTemplateBtn) {
+            const headers = ['Nama Siswa', 'NISN', 'NIS', 'Jenis Kelamin', 'Tanggal Lahir'];
+            const sampleData = [
+                { 'Nama Siswa': 'Budi Santoso', 'NISN': '1234567890', 'NIS': '1001', 'Jenis Kelamin': 'L', 'Tanggal Lahir': '2015-05-20' },
+                { 'Nama Siswa': 'Siti Aminah', 'NISN': '1234567891', 'NIS': '1002', 'Jenis Kelamin': 'P', 'Tanggal Lahir': '2015-06-15' }
+            ];
+            downloadCSV(headers, sampleData, 'Template_Siswa.csv');
+            return;
+        }
+    };
+
+    contentArea.addEventListener('click', handler);
+    contentArea._studentsHandler = handler;
 
     // CSV File Change Handler
     const csvInput = document.getElementById('import-csv-input');
@@ -104,7 +101,6 @@ export function setupGuruStudentsHandlers() {
                         if (!nisn) continue;
 
                         const existingStudent = appState.students.find(s => s.student_nisn === nisn);
-
                         const studentData = {
                             id: existingStudent ? (existingStudent.id || existingStudent.__backendId) : generateId(),
                             __backendId: existingStudent?.__backendId,
@@ -114,6 +110,7 @@ export function setupGuruStudentsHandlers() {
                             student_gender: row['jenis kelamin']?.toUpperCase() || 'L',
                             student_dob: row['tanggal lahir'],
                             student_class: appState.currentUser?.class,
+                            teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
                             type: 'student'
                         };
 
@@ -128,16 +125,14 @@ export function setupGuruStudentsHandlers() {
                     window.dispatchEvent(new CustomEvent('app-state-changed'));
                 } catch (err) {
                     showToast(err.message || 'Gagal mengimpor CSV', 'error');
-                    console.error('Import CSV Error:', err);
                 }
-                csvInput.value = ''; // Reset input
+                csvInput.value = '';
             };
             reader.readAsText(file);
         };
     }
 
-    // Modal Handlers
-    const setupModalHandlers = () => {
+    if (appState.showModal) {
         const closeBtn = document.getElementById('close-student-modal');
         const cancelBtn = document.getElementById('cancel-student-btn');
         const saveBtn = document.getElementById('save-student-btn');
@@ -149,22 +144,11 @@ export function setupGuruStudentsHandlers() {
             saveBtn.onclick = async () => {
                 if (saveBtn.disabled) return;
 
-                const nameInput = document.getElementById('student-name');
-                const nisnInput = document.getElementById('student-nisn');
-                const nisInput = document.getElementById('student-nis');
-                const genderInput = document.getElementById('student-gender');
-                const dobInput = document.getElementById('student-dob');
-
-                if (!nameInput || !nisnInput) {
-                    console.error('Form elements not found');
-                    return;
-                }
-
-                const name = nameInput.value;
-                const nisn = nisnInput.value;
-                const nis = nisInput.value;
-                const gender = genderInput.value;
-                const dob = dobInput.value;
+                const name = document.getElementById('student-name')?.value;
+                const nisn = document.getElementById('student-nisn')?.value;
+                const nis = document.getElementById('student-nis')?.value;
+                const gender = document.getElementById('student-gender')?.value;
+                const dob = document.getElementById('student-dob')?.value;
 
                 if (!name || !nisn) {
                     showToast('Nama dan NISN wajib diisi', 'error');
@@ -181,40 +165,29 @@ export function setupGuruStudentsHandlers() {
                     student_gender: gender,
                     student_dob: dob,
                     student_class: appState.currentUser?.class,
+                    teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
                     type: 'student'
                 };
 
                 try {
-                    console.log('Saving student data:', appState.modalMode, studentData);
-
                     if (appState.modalMode === 'add') {
                         studentData.id = generateId();
                         if (window.dataSdk) await window.dataSdk.create(studentData);
                         showToast('Siswa berhasil ditambahkan');
                     } else {
-                        // EDIT MODE
-                        if (!appState.editingItem) {
-                            throw new Error('Data siswa yang diedit tidak ditemukan di state');
-                        }
-
-                        // Ensure we keep the original IDs
                         const originalId = appState.editingItem.id || appState.editingItem.__backendId;
                         studentData.id = originalId;
                         studentData.__backendId = appState.editingItem.__backendId;
-
                         if (window.dataSdk) await window.dataSdk.update(studentData);
                         showToast('Siswa berhasil diperbarui');
                     }
                     closeModal();
                 } catch (err) {
-                    console.error('Gagal menyimpan data siswa:', err);
                     showToast('Gagal menyimpan data: ' + err.message, 'error');
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = 'Simpan Data';
                 }
             };
         }
-    };
-
-    if (appState.showModal) setupModalHandlers();
+    }
 }

@@ -27,7 +27,7 @@ export function renderGuruApp() {
               <div>
                 <h2 id="page-title" class="text-lg font-bold text-slate-800 leading-tight">${title}</h2>
                 <div id="breadcrumb" class="hidden sm:flex items-center gap-2 text-sm text-slate-500 mt-0.5">
-                <span>Guru</span>
+                <span class="font-medium text-purple-600">${currentUser?.school_name || 'SDN 1 PONCOWATI'}</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -58,6 +58,12 @@ export function renderGuruApp() {
                   <div id="header-menu-dropdown" class="hidden absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 animate-fadeIn origin-top-right">
                     <p class="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Akses Cepat</p>
                     <div class="space-y-1">
+                      <button data-page="guru-profile" onclick="document.getElementById('header-menu-dropdown').classList.add('hidden')" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 text-slate-600 hover:text-purple-600 transition-colors text-left group">
+                        <div class="w-8 h-8 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center group-hover:bg-pink-600 group-hover:text-white transition-colors">
+                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        </div>
+                        <span class="text-sm font-medium">Profil Saya</span>
+                      </button>
                       <button data-page="guru-students" onclick="document.getElementById('header-menu-dropdown').classList.add('hidden')" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-colors text-left group">
                         <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3.914a3 3 0 01-2.973-2.665A9.969 9.969 0 0112 15c4.744 0 8.268 1.34 9.8 2.646"></path></svg>

@@ -21,17 +21,43 @@ export function setupAdminTeachersHandlers() {
             // Delete Button
             const deleteBtn = e.target.closest('.delete-btn');
             if (deleteBtn) {
-                if (confirm('Apakah Anda yakin ingin menghapus guru ini?')) {
-                    const id = deleteBtn.getAttribute('data-id');
-                    const teacher = appState.teachers.find(t => (t.__backendId || t.id) == id);
-                    if (teacher) {
-                        try {
-                            if (window.dataSdk) await window.dataSdk.delete(teacher);
-                            showToast('Guru berhasil dihapus', 'success');
-                            window.dispatchEvent(new CustomEvent('app-state-changed'));
-                        } catch (err) {
-                            showToast('Gagal menghapus guru', 'error');
+                const id = deleteBtn.getAttribute('data-id');
+                const teacher = appState.teachers.find(t => (t.__backendId || t.id) == id);
+
+                if (teacher && confirm(`⚠ PERINGATAN! Hapus guru ${teacher.name}?\n\nSemua data (Jurnal, Absensi, Siswa, dll) yang dibuat oleh guru ini akan ikut TERHAPUS PERMANEN.`)) {
+                    try {
+                        const teacherId = teacher.__backendId || teacher.id;
+
+                        if (window.dataSdk) {
+                            // 1. Cascading delete related data
+                            await window.dataSdk.deleteByTeacherId(teacherId);
+                            // 2. Delete teacher account
+                            await window.dataSdk.delete(teacher);
                         }
+
+                        showToast('Guru dan seluruh datanya berhasil dihapus', 'success');
+                        window.dispatchEvent(new CustomEvent('app-state-changed'));
+                    } catch (err) {
+                        console.error('Cascading delete failed:', err);
+                        showToast('Gagal menghapus data secara bersih', 'error');
+                    }
+                }
+                return;
+            }
+
+            // Approve Button
+            const approveBtn = e.target.closest('.approve-btn');
+            if (approveBtn) {
+                const id = approveBtn.getAttribute('data-id');
+                const teacher = appState.teachers.find(t => (t.__backendId || t.id) == id);
+                if (teacher && confirm(`Setujui pendaftaran guru ${teacher.name}?`)) {
+                    try {
+                        const updatedTeacher = { ...teacher, status: 'active' };
+                        if (window.dataSdk) await window.dataSdk.update(updatedTeacher);
+                        showToast('Guru berhasil disetujui', 'success');
+                        window.dispatchEvent(new CustomEvent('app-state-changed'));
+                    } catch (err) {
+                        showToast('Gagal menyetujui guru', 'error');
                     }
                 }
                 return;
@@ -67,6 +93,8 @@ export function setupAdminTeachersHandlers() {
 
             const teacherData = {
                 name: document.getElementById('modal-name').value,
+                school_name: document.getElementById('modal-school').value,
+                npsn: document.getElementById('modal-npsn').value,
                 nip: document.getElementById('modal-nip').value,
                 class: document.getElementById('modal-class').value,
                 email: document.getElementById('modal-email').value,

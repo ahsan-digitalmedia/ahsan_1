@@ -17,15 +17,29 @@ export function renderGuruProfilePage() {
               ${currentUser?.name.charAt(0).toUpperCase()}
             </div>
             <div class="flex-1">
-              <div class="flex items-center justify-between mb-1">
-                <h2 class="text-2xl font-bold text-slate-800">${currentUser?.name}</h2>
-                <button id="edit-profile-btn" class="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                  </svg>
-                </button>
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+                <div>
+                  <h2 class="text-2xl font-bold text-slate-800">${currentUser?.name}</h2>
+                  <p class="text-slate-600">${currentUser?.subject || 'Belum Mengisi Mata Pelajaran'}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  ${(!currentUser?.nip || currentUser?.nip === '-' || !currentUser?.subject || currentUser?.subject === '-' || !currentUser?.class || !currentUser?.npsn) ? `
+                    <button id="edit-profile-btn" class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold shadow-lg shadow-amber-200 transition-all active:scale-95 group">
+                      <svg class="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
+                      <span>Lengkapi Biodata Guru</span>
+                    </button>
+                  ` : `
+                    <button id="edit-profile-btn" class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-100 transition-all active:scale-95 group">
+                      <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
+                      <span>Edit Profil Saya</span>
+                    </button>
+                  `}
+                </div>
               </div>
-              <p class="text-slate-600 mb-3">${currentUser?.subject}</p>
               <span class="inline-flex px-3 py-1 status-active text-white text-sm font-medium rounded-lg">
                 ${currentUser?.status === 'active' ? 'Guru Aktif' : 'Guru Non-aktif'}
               </span>
@@ -35,15 +49,19 @@ export function renderGuruProfilePage() {
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div class="p-4 bg-slate-50 rounded-xl">
               <p class="text-xs text-slate-600 mb-1">NIP</p>
-              <p class="font-semibold text-slate-800">${currentUser?.nip}</p>
+              <p class="font-semibold text-slate-800">${currentUser?.nip || '-'}</p>
             </div>
             <div class="p-4 bg-slate-50 rounded-xl">
               <p class="text-xs text-slate-600 mb-1">Kelas</p>
-              <p class="font-semibold text-slate-800">${currentUser?.class}</p>
+              <p class="font-semibold text-slate-800">${currentUser?.class || '-'}</p>
             </div>
             <div class="p-4 bg-slate-50 rounded-xl">
-              <p class="text-xs text-slate-600 mb-1">Status</p>
-              <p class="font-semibold text-slate-800">${currentUser?.status === 'active' ? 'Aktif' : 'Non-aktif'}</p>
+              <p class="text-xs text-slate-600 mb-1">Sekolah</p>
+              <p class="font-semibold text-slate-800 truncate" title="${currentUser?.school_name || '-'}">${currentUser?.school_name || '-'}</p>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-xl col-span-2 md:col-span-1">
+              <p class="text-xs text-slate-600 mb-1">NPSN</p>
+              <p class="font-semibold text-slate-800">${currentUser?.npsn || '-'}</p>
             </div>
           </div>
         </div>

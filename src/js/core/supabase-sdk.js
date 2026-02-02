@@ -19,6 +19,8 @@ export class SupabaseDataSdk {
             this.listeners.push(handler);
         }
 
+        console.log(`Supabase SDK: Initializing for table "${this.tableName}"...`);
+
         try {
             // 1. Initial Load
             const { data, error, status } = await this.client
@@ -30,12 +32,13 @@ export class SupabaseDataSdk {
                 console.error(`Supabase Fetch Error [${status}]:`, error.message);
                 if (status === 401) {
                     console.warn('Unauthorized! Attempting to clear stale session...');
-                    // Clear the specific supabase session storage to force anon key usage
                     const storageKey = `sb-${new URL(this.client.supabaseUrl).hostname.split('.')[0]}-auth-token`;
                     localStorage.removeItem(storageKey);
                 }
                 throw error;
             }
+
+            console.log(`Supabase SDK: Loaded ${data.length} records successfully.`);
 
             // Map data to the internal format (extract content and add id/type)
             this.data = data.map(d => ({
@@ -55,18 +58,15 @@ export class SupabaseDataSdk {
                     { event: '*', schema: 'public', table: this.tableName },
                     (payload) => this._handleRealtimeUpdate(payload)
                 )
-                .subscribe();
+                .subscribe((status) => {
+                    console.log(`Supabase SDK: Realtime status: ${status}`);
+                });
 
             this.isInitialized = true;
             return { isOk: true };
         } catch (err) {
-            console.error('Supabase Init Failed:', err);
+            console.error('Supabase SDK: Init Failed:', err);
             const status = err.status || (err.error && err.error.status);
-            if (status === 401) {
-                showToast('Sesi tidak valid. Silakan muat ulang halaman.', 'error');
-            } else {
-                showToast('Gagal terhubung ke database. Cek koneksi Anda.', 'error');
-            }
             return { isOk: false, error: err, status: status };
         }
     }
@@ -100,9 +100,10 @@ export class SupabaseDataSdk {
     }
 
     async create(item) {
-        // We use the 'type' field from the item to categorize it in the table
         const type = item.type || 'unknown';
-        const { type: _, ...content } = item; // Don't duplicate type in content if not needed
+        const { type: _, ...content } = item;
+
+        console.log(`Supabase SDK: Attempting to CREATE record of type "${type}"...`);
 
         const { data, error } = await this.client
             .from(this.tableName)
@@ -113,10 +114,12 @@ export class SupabaseDataSdk {
             .select();
 
         if (error) {
-            console.error('Supabase Create Error:', error);
-            showToast('Gagal menyimpan ke database', 'error');
+            console.error(`Supabase SDK: Create Error [${error.code}]:`, error.message);
+            showToast(`Gagal menyimpan: ${error.message}`, 'error');
             throw error;
         }
+
+        console.log('Supabase SDK: Record created successfully:', data[0].id);
 
         const createdItem = { ...data[0].content, __backendId: data[0].id, type: data[0].type };
         this.data.push(createdItem);
@@ -130,6 +133,8 @@ export class SupabaseDataSdk {
         const type = item.type;
         const { __backendId, id: _, type: __, ...content } = item;
 
+        console.log(`Supabase SDK: Attempting to UPDATE record "${id}" (type: "${type}")...`);
+
         const { data, error } = await this.client
             .from(this.tableName)
             .update({ content: content, updated_at: new Date().toISOString() })
@@ -137,12 +142,14 @@ export class SupabaseDataSdk {
             .select();
 
         if (error) {
-            showToast('Gagal memperbarui database', 'error');
+            console.error(`Supabase SDK: Update Error [${error.code}]:`, error.message);
+            showToast(`Gagal memperbarui: ${error.message}`, 'error');
             throw error;
         }
 
         const updatedRecord = data && data[0] ? data[0] : null;
         if (updatedRecord) {
+            console.log('Supabase SDK: Record updated successfully.');
             const updatedItem = { ...updatedRecord.content, __backendId: updatedRecord.id, type: updatedRecord.type };
             const index = this.data.findIndex(d => d.__backendId === updatedRecord.id);
             if (index !== -1) {
@@ -175,6 +182,29 @@ export class SupabaseDataSdk {
         }
 
         this.data = this.data.filter(d => d.__backendId !== itemId);
+        this._notifyListeners();
+
+        return { isOk: true };
+    }
+
+    /**
+     * Cascading delete for teacher data
+     */
+    async deleteByTeacherId(teacherId) {
+        console.log(`Supabase SDK: Cascading delete for teacher_id "${teacherId}"...`);
+
+        const { error } = await this.client
+            .from(this.tableName)
+            .delete()
+            .filter('content->>teacher_id', 'eq', teacherId);
+
+        if (error) {
+            console.error('Supabase SDK: Bulk Delete Error:', error.message);
+            throw error;
+        }
+
+        // Clean up local data - remove any item where teacher_id matches
+        this.data = this.data.filter(d => d.teacher_id !== teacherId);
         this._notifyListeners();
 
         return { isOk: true };

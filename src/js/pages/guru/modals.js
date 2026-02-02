@@ -1,5 +1,4 @@
-import { appState } from '../../core/state.js';
-import { SUBJECT_LIST } from '../../core/state.js';
+import { appState, SUBJECT_LIST, CLASS_LIST } from '../../core/state.js';
 
 export function renderGuruModal() {
   const { modalMode, currentPage, editingItem } = appState;
@@ -388,35 +387,88 @@ function renderJournalModal(mode, item) {
 
 function renderProfileModal(mode, item) {
   const { currentUser } = appState;
+  const isProfileIncomplete = !currentUser?.nip || currentUser?.nip === '-' || !currentUser?.subject || currentUser?.subject === '-' || !currentUser?.class || !currentUser?.npsn;
+  const subjects = SUBJECT_LIST || [];
+  const classes = CLASS_LIST || [];
+
   return `
     <div class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl shadow-2xl w-[95%] md:w-full max-w-lg animate-fadeIn">
-        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-slate-800">Edit Profil Saya</h3>
+      <div class="bg-white rounded-2xl shadow-2xl w-[95%] md:w-full max-w-lg animate-fadeIn transition-all">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10 rounded-t-2xl">
+          <div class="flex items-center gap-3">
+             <div class="w-10 h-10 ${isProfileIncomplete ? 'gradient-purple' : 'bg-slate-100 text-slate-600'} rounded-xl flex items-center justify-center text-white font-bold opacity-80">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+             </div>
+             <div>
+                <h3 class="text-lg font-bold text-slate-800 leading-tight">${isProfileIncomplete ? 'Lengkapi Biodata Guru' : 'Edit Profil Saya'}</h3>
+                <p class="text-xs text-slate-500">${isProfileIncomplete ? 'Pastikan data Anda sudah benar untuk pencetakan dokumen' : 'Perbarui informasi profil Anda secara berkala'}</p>
+             </div>
+          </div>
           <button id="close-profile-modal" class="p-2 rounded-xl hover:bg-slate-100 transition-colors">
             <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
-        <div class="p-6 space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap</label>
-            <input type="text" id="profile-name" value="${currentUser?.name || ''}" class="input-modern w-full px-4 py-2 border border-slate-200 rounded-xl">
+        <div class="p-6 space-y-5 max-h-[65vh] overflow-y-auto custom-scrollbar">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Nama Lengkap *</label>
+              <input type="text" id="profile-name" value="${currentUser?.name || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="Masukkan Nama Lengkap">
+            </div>
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-slate-500 uppercase ml-1">NIP (Opsional)</label>
+              <input type="text" id="profile-nip" value="${currentUser?.nip || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="Cth: 198203...">
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
-            <input type="email" id="profile-email" value="${currentUser?.email || ''}" class="input-modern w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50" readonly>
-            <p class="text-xs text-slate-400 mt-1">Email tidak dapat diubah (digunakan untuk login)</p>
+          
+          <div class="space-y-1.5 focus-within:opacity-100 opacity-80 group transition-all">
+            <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Alamat Email (Login)</label>
+            <div class="relative">
+              <input type="email" id="profile-email" value="${currentUser?.email || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 text-slate-400 font-medium cursor-not-allowed" readonly>
+              <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 15V17M6 21H18C19.1046 21 20 20.1046 20 19V13C20 11.8954 19.1046 11 18 11H6C4.89543 11 4 11.8954 4 13V19C4 20.1046 4.89543 21 6 21ZM16 11V7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7V11H16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 italic ml-1">* Email tidak dapat diubah karena merupakan kunci akses akun.</p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">No. Telepon / WhatsApp</label>
-            <input type="text" id="profile-phone" value="${currentUser?.phone || ''}" class="input-modern w-full px-4 py-2 border border-slate-200 rounded-xl" placeholder="Cth: 08123456789">
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Nama Sekolah *</label>
+            <input type="text" id="profile-school" value="${currentUser?.school_name || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="Cth: SDN 1 PONCOWATI">
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-500 uppercase ml-1">NPSN Sekolah *</label>
+            <input type="text" id="profile-npsn" value="${currentUser?.npsn || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="Cth: 108XXXXX">
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Kelas yang Diampu *</label>
+              <input type="text" id="profile-class" value="${currentUser?.class || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="Cth: kelas 1 / 1a">
+            </div>
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Mata Pelajaran *</label>
+              <select id="profile-subject" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium">
+                <option value="">Pilih Mapel</option>
+                ${subjects.map(s => `<option value="${s}" ${currentUser?.subject === s ? 'selected' : ''}>${s}</option>`).join('')}
+                <option value="Guru Kelas" ${currentUser?.subject === 'Guru Kelas' ? 'selected' : ''}>Guru Kelas</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-500 uppercase ml-1">No. HP / WhatsApp *</label>
+            <input type="text" id="profile-phone" value="${currentUser?.phone || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="Cth: 08123456789">
           </div>
         </div>
         <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 rounded-b-2xl">
-          <button id="cancel-profile-btn" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-white transition-colors">Batal</button>
-          <button id="save-profile-btn" class="btn-primary px-5 py-2.5 rounded-xl text-white font-medium shadow-lg">Simpan Perubahan</button>
+          <button id="cancel-profile-btn" class="px-6 py-3 rounded-xl text-slate-500 font-bold hover:bg-slate-200 transition-all">Nanti Saja</button>
+          <button id="save-profile-btn" class="btn-primary px-10 py-3 rounded-xl text-white font-bold shadow-lg shadow-purple-100 flex items-center gap-2 active:scale-95 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+            <span>Simpan Biodata</span>
+          </button>
         </div>
       </div>
     </div>
