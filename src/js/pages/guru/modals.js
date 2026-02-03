@@ -27,6 +27,7 @@ export function renderGuruModal() {
 }
 
 function renderStudentModal(mode, item) {
+  const { currentUser } = appState;
   return `
     <div class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
       <div class="bg-white rounded-2xl shadow-2xl w-[95%] md:w-full max-w-lg animate-fadeIn">
@@ -66,6 +67,17 @@ function renderStudentModal(mode, item) {
               <input type="date" id="student-dob" value="${item?.student_dob || ''}" class="input-modern w-full px-4 py-2 border border-slate-200 rounded-xl">
             </div>
           </div>
+          <div class="space-y-1.5 mt-2">
+            <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Kelas yang Diampu *</label>
+              <select id="student-class" class="input-modern w-full px-4 py-2 border border-slate-200 rounded-xl">
+                <option value="">Pilih Kelas</option>
+                ${(currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c).map(c => {
+    const label = c.toLowerCase().startsWith('kelas') ? c : `Kelas ${c}`;
+    return `<option value="${c}" ${item?.student_class === c ? 'selected' : ''}>${label}</option>`;
+  }).join('')}
+                ${!(currentUser?.class) ? `<option value="${appState.currentUser?.class}" selected>Kelas ${appState.currentUser?.class}</option>` : ''}
+              </select>
+          </div>
         </div>
         <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 rounded-b-2xl">
           <button id="cancel-student-btn" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-white transition-colors">Batal</button>
@@ -78,7 +90,18 @@ function renderStudentModal(mode, item) {
 
 function renderScoreModal(mode, item) {
   const { students, currentUser } = appState;
-  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+  const teacherId = currentUser?.__backendId || currentUser?.id;
+  const managedClasses = (currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+  const isFlexibleMatch = (itemClass) => {
+    if (!itemClass) return false;
+    return managedClasses.some(mc => {
+      const ic = String(itemClass).trim();
+      const target = String(mc).trim();
+      if (ic === target) return true;
+      return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+    });
+  };
+  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && (String(s.teacher_id) === String(teacherId) || isFlexibleMatch(s.student_class)));
   const subjects = SUBJECT_LIST;
 
   return `
@@ -94,11 +117,29 @@ function renderScoreModal(mode, item) {
         </div>
         <div class="p-6">
           <form id="score-form" class="space-y-4">
+            ${mode === 'add' ? `
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Kelas *</label>
+              <select id="modal-score-class" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
+                <option value="">Semua Kelas</option>
+                ${managedClasses.map(c => {
+    const label = c.toLowerCase().startsWith('kelas') ? c : `Kelas ${c}`;
+    return `<option value="${c}" ${appState.selectedModalScoreClass === c ? 'selected' : ''}>${label}</option>`;
+  }).join('')}
+              </select>
+            </div>
+            ` : ''}
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Siswa *</label>
               <select id="modal-score-student" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required ${mode === 'edit' ? 'disabled' : ''}>
                 <option value="">Pilih Siswa</option>
-                ${classStudents.map(s => `<option value="${s.__backendId || s.id}" ${item?.student_id === (s.__backendId || s.id) ? 'selected' : ''}>${s.student_name}</option>`).join('')}
+                ${(() => {
+      let candidates = classStudents;
+      if (mode === 'add' && appState.selectedModalScoreClass) {
+        candidates = candidates.filter(s => s.student_class === appState.selectedModalScoreClass);
+      }
+      return candidates.map(s => `<option value="${s.__backendId || s.id}" ${item?.student_id === (s.__backendId || s.id) ? 'selected' : ''}>${s.student_name} (${s.student_class || '-'})</option>`).join('');
+    })()}
               </select>
             </div>
             <div>
@@ -363,6 +404,16 @@ function renderJournalModal(mode, item) {
         <div class="p-6">
           <form id="journal-form" class="space-y-4">
             <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Kelas *</label>
+              <select id="jou-class" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl" required>
+                <option value="">Pilih Kelas</option>
+                ${(appState.currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c).map(c => {
+    const label = c.toLowerCase().startsWith('kelas') ? c : `Kelas ${c}`;
+    return `<option value="${c}" ${item?.journal_class === c ? 'selected' : ''}>${label}</option>`;
+  }).join('')}
+              </select>
+            </div>
+            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
               <input type="date" id="jou-date" value="${item?.journal_date || new Date().toISOString().split('T')[0]}" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl" required>
             </div>
@@ -439,11 +490,41 @@ function renderProfileModal(mode, item) {
             <input type="text" id="profile-npsn" value="${currentUser?.npsn || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="Cth: 108XXXXX">
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div class="space-y-1.5">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
               <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Kelas yang Diampu *</label>
-              <input type="text" id="profile-class" value="${currentUser?.class || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="Cth: kelas 1 / 1a">
+              <button id="add-profile-class-btn" type="button" class="text-xs font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                Tambah Kelas
+              </button>
             </div>
+            <div id="profile-classes-container" class="space-y-3">
+              ${(() => {
+      const managedClasses = (currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+      const rows = managedClasses.length > 0 ? managedClasses : [''];
+      return rows.map((c, idx) => {
+        const level = (c.match(/^\d+/) || ['1'])[0];
+        const suffix = c.replace(/^\d+/, '');
+        return `
+                  <div class="profile-class-row flex items-center gap-3 animate-fadeIn">
+                    <div class="flex-1 grid grid-cols-2 gap-2">
+                       <select class="profile-class-level input-modern w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-medium">
+                         ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `<option value="${num}" ${level == num ? 'selected' : ''}>Kelas ${num}</option>`).join('')}
+                       </select>
+                       <input type="text" class="profile-class-suffix input-modern w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-medium" value="${suffix}" placeholder="Rombel (A, B, dll)">
+                    </div>
+                    ${rows.length > 1 ? `
+                      <button type="button" class="remove-profile-class-btn p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    ` : ''}
+                  </div>
+                `;
+      }).join('');
+    })()}
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-1.5">
               <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Mata Pelajaran *</label>
               <select id="profile-subject" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium">

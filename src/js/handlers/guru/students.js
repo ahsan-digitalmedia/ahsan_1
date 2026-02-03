@@ -31,7 +31,10 @@ export function setupGuruStudentsHandlers() {
         const deleteBtn = e.target.closest('.delete-student-btn');
         if (deleteBtn) {
             const id = deleteBtn.getAttribute('data-id');
-            const student = appState.students.find(s => (s.__backendId || s.id) == id);
+            const student = appState.students.find(s =>
+                String(s.__backendId || s.id) === String(id) ||
+                String(s.id) === String(id)
+            );
             if (student && confirm('Apakah Anda yakin ingin menghapus siswa ini?')) {
                 try {
                     if (window.dataSdk) await window.dataSdk.delete(student);
@@ -62,10 +65,19 @@ export function setupGuruStudentsHandlers() {
         // Download Template Button
         const downloadTemplateBtn = e.target.closest('#download-template-btn');
         if (downloadTemplateBtn) {
-            const headers = ['Nama Siswa', 'NISN', 'NIS', 'Jenis Kelamin', 'Tanggal Lahir'];
+            const headers = ['Nama Siswa', 'NISN', 'NIS', 'Jenis Kelamin', 'Tanggal Lahir', 'Kelas', 'Nama Rombel'];
+
+            // Get teacher's managed classes to provide better samples
+            const managedClasses = (appState.currentUser?.class || '1A').split(',').map(c => c.trim()).filter(c => c);
+            const firstClass = managedClasses[0] || '1A';
+            const secondClass = managedClasses[1] || managedClasses[0] || '1B';
+
+            const getLevel = (c) => (c.match(/^\d+/) || ['1'])[0];
+            const getSuffix = (c) => c.replace(/^\d+/, '') || '-';
+
             const sampleData = [
-                { 'Nama Siswa': 'Budi Santoso', 'NISN': '1234567890', 'NIS': '1001', 'Jenis Kelamin': 'L', 'Tanggal Lahir': '2015-05-20' },
-                { 'Nama Siswa': 'Siti Aminah', 'NISN': '1234567891', 'NIS': '1002', 'Jenis Kelamin': 'P', 'Tanggal Lahir': '2015-06-15' }
+                { 'Nama Siswa': 'Budi Santoso', 'NISN': '1234567890', 'NIS': '1001', 'Jenis Kelamin': 'L', 'Tanggal Lahir': '2015-05-20', 'Kelas': getLevel(firstClass), 'Nama Rombel': getSuffix(firstClass) },
+                { 'Nama Siswa': 'Siti Aminah', 'NISN': '1234567891', 'NIS': '1002', 'Jenis Kelamin': 'P', 'Tanggal Lahir': '2015-06-15', 'Kelas': getLevel(secondClass), 'Nama Rombel': getSuffix(secondClass) }
             ];
             downloadCSV(headers, sampleData, 'Template_Siswa.csv');
             return;
@@ -86,7 +98,7 @@ export function setupGuruStudentsHandlers() {
             reader.onload = async (event) => {
                 const text = event.target.result;
                 try {
-                    const expectedHeaders = ['Nama Siswa', 'NISN', 'NIS', 'Jenis Kelamin', 'Tanggal Lahir'];
+                    const expectedHeaders = ['Nama Siswa', 'NISN', 'NIS', 'Jenis Kelamin', 'Tanggal Lahir', 'Kelas', 'Nama Rombel'];
                     const data = parseCSV(text, expectedHeaders);
 
                     if (data.length === 0) {
@@ -109,7 +121,7 @@ export function setupGuruStudentsHandlers() {
                             student_nis: row['nis'],
                             student_gender: row['jenis kelamin']?.toUpperCase() || 'L',
                             student_dob: row['tanggal lahir'],
-                            student_class: appState.currentUser?.class,
+                            student_class: (row['kelas'] || '') + (row['nama rombel'] || ''),
                             teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
                             type: 'student'
                         };
@@ -149,9 +161,10 @@ export function setupGuruStudentsHandlers() {
                 const nis = document.getElementById('student-nis')?.value;
                 const gender = document.getElementById('student-gender')?.value;
                 const dob = document.getElementById('student-dob')?.value;
+                const studentClass = document.getElementById('student-class')?.value;
 
-                if (!name || !nisn) {
-                    showToast('Nama dan NISN wajib diisi', 'error');
+                if (!name || !nisn || !studentClass) {
+                    showToast('Nama, NISN, dan Kelas wajib diisi', 'error');
                     return;
                 }
 
@@ -164,7 +177,7 @@ export function setupGuruStudentsHandlers() {
                     student_nis: nis,
                     student_gender: gender,
                     student_dob: dob,
-                    student_class: appState.currentUser?.class,
+                    student_class: studentClass,
                     teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
                     type: 'student'
                 };

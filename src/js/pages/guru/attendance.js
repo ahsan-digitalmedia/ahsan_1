@@ -2,9 +2,29 @@ import { appState } from '../../core/state.js';
 import { formatDate } from '../../core/utils.js';
 
 export function renderGuruAttendancePage() {
-  const { attendances, students, currentUser, selectedDate } = appState;
-  const classAttendances = attendances.filter(a => a.attendance_class === currentUser?.class);
-  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+  const { attendances, students, currentUser, selectedDate, selectedAttendanceClass } = appState;
+  const teacherId = currentUser?.__backendId || currentUser?.id;
+  const managedClasses = (currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+
+  const currentClass = selectedAttendanceClass || managedClasses[0] || '';
+
+  const isMatch = (itemClass) => {
+    const ic = String(itemClass || '').trim();
+    const target = String(currentClass || '').trim();
+    if (ic === target) return true;
+    return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+  };
+
+  const classAttendances = attendances.filter(a =>
+    (String(a.attendance_teacher_nip) === String(currentUser?.nip) || String(a.teacher_id) === String(teacherId)) &&
+    isMatch(a.attendance_class)
+  );
+
+  const classStudents = students.filter(s =>
+    (s.type === 'student' || !s.type) &&
+    isMatch(s.student_class)
+  );
+
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const viewDate = selectedDate || today;
@@ -13,9 +33,20 @@ export function renderGuruAttendancePage() {
     <div class="animate-fadeIn">
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div class="flex flex-col md:flex-row gap-4 items-end">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-2">Pilih Tanggal</label>
-            <input type="date" id="attendance-date" value="${viewDate}" class="input-modern px-4 py-2.5 border border-slate-200 rounded-xl">
+          <div class="flex flex-col md:flex-row gap-3">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Pilih Tanggal</label>
+              <input type="date" id="attendance-date" value="${viewDate}" class="input-modern px-4 py-2.5 border border-slate-200 rounded-xl">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Pilih Kelas</label>
+              <select id="attendance-class-select" class="input-modern px-4 py-2.5 border border-slate-200 rounded-xl min-w-[140px]">
+                ${managedClasses.map(c => {
+    const label = c.toLowerCase().startsWith('kelas') ? c : `Kelas ${c}`;
+    return `<option value="${c}" ${currentClass === c ? 'selected' : ''}>${label}</option>`;
+  }).join('')}
+              </select>
+            </div>
           </div>
           <button id="mark-all-present-btn" class="px-5 py-2.5 rounded-xl border border-green-200 bg-green-50 text-green-700 font-medium hover:bg-green-100 flex items-center gap-2 transition-colors h-fit">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,6 +91,7 @@ export function renderGuruAttendancePage() {
             <thead class="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nama Siswa</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Kelas</th>
                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">NISN</th>
                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">NIS</th>
                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider hidden md:table-cell">JK</th>
@@ -75,7 +107,10 @@ export function renderGuruAttendancePage() {
                   </td>
                 </tr>
               ` : classStudents.map((student, index) => {
-    const studentAttendance = classAttendances.find(a => a.student_id === (student.__backendId || student.id) && a.attendance_date === viewDate);
+    const studentAttendance = classAttendances.find(a =>
+      String(a.student_id || '').trim() === String(student.__backendId || student.id || '').trim() &&
+      String(a.attendance_date || '').trim() === String(viewDate || '').trim()
+    );
     const statusColor = {
       'hadir': 'text-green-600 bg-green-50',
       'alpa': 'text-red-600 bg-red-50',
@@ -99,6 +134,9 @@ export function renderGuruAttendancePage() {
                         </div>
                         <p class="font-medium text-slate-800">${student.student_name}</p>
                       </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm font-medium text-slate-700">
+                      <span class="px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-xs">${student.student_class || '-'}</span>
                     </td>
                     <td class="px-6 py-4 text-sm text-slate-600">${student.student_nisn}</td>
                     <td class="px-6 py-4 text-sm text-slate-600">${student.student_nis || '-'}</td>

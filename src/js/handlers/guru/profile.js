@@ -10,6 +10,7 @@ export function setupGuruProfileHandlers() {
     }
 
     const handler = (e) => {
+        // Edit Profile Button
         const editBtn = e.target.closest('#edit-profile-btn');
         if (editBtn) {
             updateState({
@@ -33,6 +34,46 @@ export function setupGuruProfileHandlers() {
 
     // Modal Handlers (Dynamically rendered)
     if (appState.showModal) {
+        const modalContainer = document.getElementById('modal-container');
+        if (modalContainer) {
+            modalContainer.onclick = (e) => {
+                // Add class row in profile modal
+                const addClassBtn = e.target.closest('#add-profile-class-btn');
+                if (addClassBtn) {
+                    const container = document.getElementById('profile-classes-container');
+                    if (container) {
+                        const newRow = document.createElement('div');
+                        newRow.className = 'profile-class-row flex items-center gap-3 animate-fadeIn';
+                        newRow.innerHTML = `
+                            <div class="flex-1 grid grid-cols-2 gap-2">
+                               <select class="profile-class-level input-modern w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-medium">
+                                 ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `<option value="${num}">Kelas ${num}</option>`).join('')}
+                               </select>
+                               <input type="text" class="profile-class-suffix input-modern w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-medium" value="" placeholder="Rombel (A, B, dll)">
+                            </div>
+                            <button type="button" class="remove-profile-class-btn p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        `;
+                        container.appendChild(newRow);
+                        updateRemoveButtonsVisibility();
+                    }
+                    return;
+                }
+
+                // Remove class row in profile modal
+                const removeBtn = e.target.closest('.remove-profile-class-btn');
+                if (removeBtn) {
+                    const row = removeBtn.closest('.profile-class-row');
+                    if (row) {
+                        row.remove();
+                        updateRemoveButtonsVisibility();
+                    }
+                    return;
+                }
+            };
+        }
+
         const closeBtn = document.getElementById('close-profile-modal');
         const cancelBtn = document.getElementById('cancel-profile-btn');
         const saveBtn = document.getElementById('save-profile-btn');
@@ -53,7 +94,16 @@ export function setupGuruProfileHandlers() {
                 const newNip = document.getElementById('profile-nip')?.value || '';
                 const newSchool = document.getElementById('profile-school')?.value || '';
                 const newNpsn = document.getElementById('profile-npsn')?.value || '';
-                const newClass = document.getElementById('profile-class')?.value || '';
+
+                // Get all managed classes from rows
+                const classRows = document.querySelectorAll('.profile-class-row');
+                const classes = Array.from(classRows).map(row => {
+                    const level = row.querySelector('.profile-class-level').value;
+                    const suffix = row.querySelector('.profile-class-suffix').value.trim();
+                    return `${level}${suffix}`;
+                }).filter(c => c).join(', ');
+
+                const newClass = classes;
                 const newSubject = document.getElementById('profile-subject')?.value || '';
 
                 if (!newName || !newSchool || !newNpsn || !newClass || !newSubject || !newPhone) {
@@ -107,5 +157,17 @@ export function setupGuruProfileHandlers() {
                 }
             };
         }
+
+        updateRemoveButtonsVisibility();
+    }
+
+    function updateRemoveButtonsVisibility() {
+        const rows = document.querySelectorAll('.profile-class-row');
+        rows.forEach(row => {
+            const btn = row.querySelector('.remove-profile-class-btn');
+            if (btn) {
+                btn.style.display = rows.length > 1 ? 'flex' : 'none';
+            }
+        });
     }
 }

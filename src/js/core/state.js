@@ -62,6 +62,8 @@ export const appState = {
     isLoading: false,
     filterSubject: '',
     scoreViewMode: 'input', // 'input' or 'rekap'
+    selectedAttendanceClass: '',
+    selectedScoreClass: '',
 };
 
 // Helper to update state

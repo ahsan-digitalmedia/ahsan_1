@@ -2,8 +2,38 @@ import { appState } from '../../core/state.js';
 import { formatDate } from '../../core/utils.js';
 
 export function renderGuruJournalPage() {
-  const { journals, currentUser } = appState;
-  const classJournals = journals.filter(j => (j.type === 'journal' || !j.type) && j.journal_class === currentUser?.class && j.journal_teacher_nip === currentUser?.nip);
+  const { journals, currentUser, selectedJournalClass } = appState;
+  const managedClasses = (currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+  const isFlexibleMatch = (itemClass, targetClass) => {
+    if (!itemClass || !targetClass) return false;
+    const ic = String(itemClass).trim();
+    const target = String(targetClass).trim();
+    if (ic === target) return true;
+    return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+  };
+
+  const currentClassFilter = selectedJournalClass || '';
+
+  const classJournals = journals.filter(j => {
+    const isJournalType = j.type === 'journal' || !j.type;
+    const isOwner = String(j.journal_teacher_nip) === String(currentUser?.nip);
+
+    // Check if journal matches any managed class for visibility
+    const matchesAnyManaged = managedClasses.some(mc => {
+      const ic = String(j.journal_class).trim();
+      const target = String(mc).trim();
+      if (ic === target) return true;
+      return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+    });
+
+    if (!(isJournalType && (isOwner || matchesAnyManaged))) return false;
+
+    // Apply specific class filter if selected
+    if (currentClassFilter) {
+      return isFlexibleMatch(j.journal_class, currentClassFilter);
+    }
+    return true;
+  });
 
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -37,10 +67,19 @@ export function renderGuruJournalPage() {
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div class="flex flex-col md:flex-row gap-4 items-end">
           <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Pilih Kelas</label>
+            <select id="journal-class-filter" class="input-modern px-4 py-2.5 border border-slate-200 rounded-xl">
+              <option value="">Semua Kelas</option>
+              ${managedClasses.map(c => {
+    const label = c.toLowerCase().startsWith('kelas') ? c : `Kelas ${c}`;
+    return `<option value="${c}" ${selectedJournalClass === c ? 'selected' : ''}>${label}</option>`;
+  }).join('')}
+            </select>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-slate-700 mb-2">Pilih Tanggal</label>
             <input type="date" id="journal-date-filter" value="${today}" class="input-modern px-4 py-2.5 border border-slate-200 rounded-xl">
           </div>
-          <p class="text-sm text-slate-500 mb-2.5 hidden md:block">Jurnal pembelajaran kelas ${currentUser?.class}</p>
         </div>
         <div class="flex items-center gap-2">
           <button id="print-journal-btn" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 flex items-center gap-2 transition-all">

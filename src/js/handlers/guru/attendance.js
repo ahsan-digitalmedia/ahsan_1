@@ -18,8 +18,11 @@ export function setupGuruAttendanceHandlers() {
       const date = document.getElementById('attendance-date').value;
 
       try {
+        const student = appState.students.find(s => String(s.__backendId || s.id) === String(studentId));
+        const managedClasses = (appState.currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+        const currentClass = appState.selectedAttendanceClass || managedClasses[0] || '';
         const existing = appState.attendances.find(a =>
-          a.student_id == studentId && a.attendance_date === date
+          String(a.student_id) === String(studentId) && a.attendance_date === date
         );
 
         const attendanceData = {
@@ -28,15 +31,22 @@ export function setupGuruAttendanceHandlers() {
           student_id: studentId,
           attendance_date: date,
           attendance_status: status,
-          attendance_class: appState.currentUser?.class,
+          attendance_class: currentClass || student?.student_class,
           teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
+          attendance_teacher_nip: appState.currentUser?.nip,
           type: 'attendance'
         };
 
         if (existing) {
           if (window.dataSdk) await window.dataSdk.update(attendanceData);
+          const idx = appState.attendances.findIndex(a =>
+            String(a.student_id || '').trim() === String(studentId || '').trim() &&
+            String(a.attendance_date || '').trim() === String(date || '').trim()
+          );
+          if (idx !== -1) appState.attendances[idx] = attendanceData;
         } else {
           if (window.dataSdk) await window.dataSdk.create(attendanceData);
+          appState.attendances.push(attendanceData);
         }
         window.dispatchEvent(new CustomEvent('app-state-changed'));
       } catch (err) {
@@ -49,8 +59,17 @@ export function setupGuruAttendanceHandlers() {
     const markAllBtn = e.target.closest('#mark-all-present-btn');
     if (markAllBtn) {
       const date = document.getElementById('attendance-date').value;
+      const managedClasses = (appState.currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+      const currentClass = appState.selectedAttendanceClass || managedClasses[0] || '';
+      const isFlexibleMatch = (itemClass) => {
+        const ic = String(itemClass || '').trim();
+        const target = String(currentClass || '').trim();
+        if (ic === target) return true;
+        return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+      };
+
       const classStudents = appState.students.filter(s =>
-        (s.type === 'student' || !s.type) && s.student_class === appState.currentUser?.class
+        (s.type === 'student' || !s.type) && isFlexibleMatch(s.student_class)
       );
 
       if (classStudents.length === 0) {
@@ -58,17 +77,17 @@ export function setupGuruAttendanceHandlers() {
         return;
       }
 
-      if (!confirm(`Hadirkan semua (${classStudents.length}) siswa untuk tanggal ${date}?`)) return;
+
 
       markAllBtn.disabled = true;
       const originalText = markAllBtn.innerHTML;
       markAllBtn.innerHTML = 'Memproses...';
 
       try {
-        for (const student of classStudents) {
+        const attendancePromises = classStudents.map(async (student) => {
           const studentId = student.__backendId || student.id;
           const existing = appState.attendances.find(a =>
-            a.student_id == studentId && a.attendance_date === date
+            String(a.student_id) === String(studentId) && a.attendance_date === date
           );
 
           const attendanceData = {
@@ -77,26 +96,48 @@ export function setupGuruAttendanceHandlers() {
             student_id: studentId,
             attendance_date: date,
             attendance_status: 'hadir',
-            attendance_class: appState.currentUser?.class,
+            attendance_class: currentClass,
             teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
+            attendance_teacher_nip: appState.currentUser?.nip,
             type: 'attendance'
           };
 
           if (existing) {
             if (existing.attendance_status !== 'hadir') {
               if (window.dataSdk) await window.dataSdk.update(attendanceData);
+              return { type: 'update', data: attendanceData };
             }
+            return { type: 'none' };
           } else {
             if (window.dataSdk) await window.dataSdk.create(attendanceData);
+            return { type: 'create', data: attendanceData };
           }
-        }
+        });
+
+        const results = await Promise.all(attendancePromises);
+
+        // Update local state in one go
+        const newAttendances = [...appState.attendances];
+        results.forEach(res => {
+          if (res.type === 'create') {
+            newAttendances.push(res.data);
+          } else if (res.type === 'update') {
+            const idx = newAttendances.findIndex(a =>
+              String(a.student_id) === String(res.data.student_id) && a.attendance_date === res.data.attendance_date
+            );
+            if (idx !== -1) newAttendances[idx] = res.data;
+          }
+        });
+
+        updateState({ attendances: newAttendances });
         showToast('Semua siswa berhasil dihadirkan');
-        window.dispatchEvent(new CustomEvent('app-state-changed'));
       } catch (err) {
+        console.error('Mass attendance error:', err);
         showToast('Gagal memproses absensi massal', 'error');
       } finally {
         markAllBtn.disabled = false;
         markAllBtn.innerHTML = originalText;
+        window.dispatchEvent(new CustomEvent('app-state-changed'));
       }
       return;
     }
@@ -122,14 +163,32 @@ export function setupGuruAttendanceHandlers() {
       window.dispatchEvent(new CustomEvent('app-state-changed'));
     };
   }
+
+  // Class Selector Handler
+  const classSelect = document.getElementById('attendance-class-select');
+  if (classSelect) {
+    classSelect.onchange = (e) => {
+      updateState({ selectedAttendanceClass: e.target.value });
+      window.dispatchEvent(new CustomEvent('app-state-changed'));
+    };
+  }
 }
 
 function printAttendanceReport(type, dateStr) {
-  const { students, attendances, currentUser, config } = appState;
-  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+  const { students, attendances, currentUser, config, selectedAttendanceClass } = appState;
+  const managedClasses = (currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+  const currentClass = selectedAttendanceClass || managedClasses[0] || '';
+  const isFlexibleMatch = (itemClass) => {
+    const ic = String(itemClass || '').trim();
+    const target = String(currentClass || '').trim();
+    if (ic === target) return true;
+    return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+  };
+
+  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && isFlexibleMatch(s.student_class));
   const schoolName = currentUser?.school_name || config.school_name || 'SDN 1 PONCOWATI';
   const teacherName = currentUser?.name || 'Guru Kelas';
-  const className = currentUser?.class || '-';
+  const className = currentClass || '-';
 
   let title = '';
   let dateInfo = '';

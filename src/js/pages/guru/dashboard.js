@@ -3,10 +3,22 @@ import { appState } from '../../core/state.js';
 export function renderGuruDashboard() {
   const { students, attendances, scores, journals, assignments, currentUser } = appState;
 
-  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
-  const classAttendances = attendances.filter(a => a.attendance_class === currentUser?.class);
-  const classScores = scores.filter(s => s.score_teacher_class === currentUser?.class);
-  const classJournals = journals.filter(j => (j.type === 'journal' || !j.type) && j.journal_class === currentUser?.class && j.journal_teacher_nip === currentUser?.nip);
+  const teacherId = currentUser?.__backendId || currentUser?.id;
+  const managedClasses = (currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+  const isFlexibleMatch = (itemClass) => {
+    if (!itemClass) return false;
+    return managedClasses.some(mc => {
+      const ic = String(itemClass).trim();
+      const target = String(mc).trim();
+      if (ic === target) return true;
+      return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+    });
+  };
+
+  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && (String(s.teacher_id) === String(teacherId) || isFlexibleMatch(s.student_class)));
+  const classAttendances = attendances.filter(a => String(a.attendance_teacher_nip) === String(currentUser?.nip) || isFlexibleMatch(a.attendance_class));
+  const classScores = scores.filter(s => String(s.score_teacher_nip) === String(currentUser?.nip) || isFlexibleMatch(s.score_teacher_class));
+  const classJournals = journals.filter(j => (j.type === 'journal' || !j.type) && (String(j.journal_teacher_nip) === String(currentUser?.nip) || isFlexibleMatch(j.journal_class)));
 
   const today = new Date().toISOString().split('T')[0];
   const todayAttendances = classAttendances.filter(a => a.attendance_date === today);
@@ -37,7 +49,7 @@ export function renderGuruDashboard() {
         <div class="flex items-start justify-between">
           <div>
             <h1 class="text-3xl font-bold mb-2">Selamat Datang, ${currentUser?.name}! 👋</h1>
-            <p class="text-purple-100 mb-4">Mata Pelajaran: <strong>${currentUser?.subject}</strong> • Kelas: <strong>${currentUser?.class}</strong></p>
+            <p class="text-purple-100 mb-4">Mata Pelajaran: <strong>${currentUser?.subject}</strong> • Pengampu Berbagai Kelas</p>
             <div class="flex gap-4 flex-wrap">
               <div class="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-lg">
                 <span class="text-lg">👥</span>

@@ -3,13 +3,25 @@ import { formatDate } from '../../core/utils.js';
 
 export function renderGuruStudentsPage() {
   const { students, currentUser } = appState;
-  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+  const teacherId = currentUser?.__backendId || currentUser?.id;
+  const managedClasses = (currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+  const isFlexibleMatch = (itemClass) => {
+    if (!itemClass) return false;
+    return managedClasses.some(mc => {
+      const ic = String(itemClass).trim();
+      const target = String(mc).trim();
+      if (ic === target) return true;
+      return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+    });
+  };
+
+  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && (String(s.teacher_id) === String(teacherId) || isFlexibleMatch(s.student_class)));
 
   return `
     <div class="animate-fadeIn">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <p class="text-slate-500">Kelola data siswa kelas ${currentUser?.class}</p>
+          <p class="text-slate-500">Kelola data siswa yang Anda ampu</p>
         </div>
         <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <input type="file" id="import-csv-input" accept=".csv" class="hidden">
@@ -42,6 +54,7 @@ export function renderGuruStudentsPage() {
                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nama Siswa</th>
                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">NISN</th>
                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">NIS</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Kelas</th>
                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider hidden md:table-cell">Jenis Kelamin</th>
                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider hidden lg:table-cell">Tanggal Lahir</th>
                 <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Aksi</th>
@@ -66,6 +79,9 @@ export function renderGuruStudentsPage() {
                   </td>
                   <td class="px-6 py-4 text-sm text-slate-600">${student.student_nisn}</td>
                   <td class="px-6 py-4 text-sm text-slate-600">${student.student_nis || '-'}</td>
+                  <td class="px-6 py-4 text-sm font-medium text-slate-700">
+                    <span class="px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-xs">${student.student_class || '-'}</span>
+                  </td>
                   <td class="px-6 py-4 text-sm text-slate-600 hidden md:table-cell">${student.student_gender === 'L' ? 'Laki-laki' : 'Perempuan'}</td>
                   <td class="px-6 py-4 text-sm text-slate-600 hidden lg:table-cell">${formatDate(student.student_dob)}</td>
                   <td class="px-6 py-4">

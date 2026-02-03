@@ -76,9 +76,19 @@ export function setupAdminTeachersHandlers() {
     const closeModalBtn = document.getElementById('close-modal');
     const cancelModalBtn = document.getElementById('cancel-modal');
     const saveBtn = document.getElementById('save-teacher');
+    const showPasswordCheck = document.getElementById('show-password');
 
     if (closeModalBtn) closeModalBtn.onclick = closeModal;
     if (cancelModalBtn) cancelModalBtn.onclick = closeModal;
+
+    if (showPasswordCheck) {
+        showPasswordCheck.onchange = (e) => {
+            const passwordInput = document.getElementById('modal-password');
+            if (passwordInput) {
+                passwordInput.type = e.target.checked ? 'text' : 'password';
+            }
+        };
+    }
 
     if (saveBtn) {
         saveBtn.onclick = async () => {

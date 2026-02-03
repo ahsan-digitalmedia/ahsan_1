@@ -71,6 +71,10 @@ function renderTeacherModal(mode, item) {
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Password *</label>
                 <input type="password" id="modal-password" value="${item?.password || ''}" placeholder="Minimal 6 karakter" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
+                <div class="mt-2 flex items-center gap-2">
+                  <input type="checkbox" id="show-password" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+                  <label for="show-password" class="text-xs text-slate-500 cursor-pointer select-none">Tampilkan Password</label>
+                </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Status Kepegawaian *</label>

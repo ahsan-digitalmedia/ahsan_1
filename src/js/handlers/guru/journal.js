@@ -56,6 +56,14 @@ export function setupGuruJournalHandlers() {
         }
     };
 
+    const classFilterSelect = document.getElementById('journal-class-filter');
+    if (classFilterSelect) {
+        classFilterSelect.onchange = (e) => {
+            updateState({ selectedJournalClass: e.target.value });
+            window.dispatchEvent(new CustomEvent('app-state-changed'));
+        };
+    }
+
     contentArea.addEventListener('click', handler);
     contentArea._journalHandler = handler;
 
@@ -77,7 +85,7 @@ export function setupGuruJournalHandlers() {
                 const journalData = {
                     journal_date: document.getElementById('jou-date').value,
                     journal_content: document.getElementById('jou-content').value,
-                    journal_class: appState.currentUser?.class,
+                    journal_class: document.getElementById('jou-class').value,
                     journal_teacher_nip: appState.currentUser?.nip,
                     teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
                     type: 'journal'
@@ -105,11 +113,41 @@ export function setupGuruJournalHandlers() {
 }
 
 function printJournalReport(type = 'all', dateStr) {
-    const { journals, currentUser, config } = appState;
-    const classJournals = journals.filter(j => (j.type === 'journal' || !j.type) && j.journal_class === currentUser?.class && j.journal_teacher_nip === currentUser?.nip);
+    const { journals, currentUser, config, selectedJournalClass } = appState;
+    const managedClasses = (currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+    const isFlexibleMatch = (itemClass, targetClass) => {
+        if (!itemClass || !targetClass) return false;
+        const ic = String(itemClass).trim();
+        const target = String(targetClass).trim();
+        if (ic === target) return true;
+        return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+    };
+
+    const currentClassFilter = selectedJournalClass || '';
+
+    const classJournals = journals.filter(j => {
+        const isJournalType = j.type === 'journal' || !j.type;
+        const isOwner = String(j.journal_teacher_nip) === String(currentUser?.nip);
+
+        // matches managed classes
+        const matchesAnyManaged = managedClasses.some(mc => {
+            const ic = String(j.journal_class).trim();
+            const target = String(mc).trim();
+            if (ic === target) return true;
+            return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+        });
+
+        if (!(isJournalType && (isOwner || matchesAnyManaged))) return false;
+
+        if (currentClassFilter) {
+            return isFlexibleMatch(j.journal_class, currentClassFilter);
+        }
+        return true;
+    });
+
     const schoolName = currentUser?.school_name || config.school_name || 'SDN 1 PONCOWATI';
     const teacherName = currentUser?.name || 'Guru Kelas';
-    const className = currentUser?.class || '-';
+    const className = currentClassFilter || currentUser?.class || '-';
 
     const now = new Date();
     const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;

@@ -29,6 +29,14 @@ export function setupGuruScoresHandlers() {
         };
     }
 
+    const classSelect = document.getElementById('score-class-select');
+    if (classSelect) {
+        classSelect.onchange = (e) => {
+            updateState({ selectedScoreClass: e.target.value });
+            window.dispatchEvent(new CustomEvent('app-state-changed'));
+        };
+    }
+
     const contentArea = document.getElementById('content-area');
     if (!contentArea) return;
 
@@ -85,10 +93,18 @@ export function setupGuruScoresHandlers() {
         // Download Template Button
         const downloadTemplateBtn = e.target.closest('#download-score-template-btn');
         if (downloadTemplateBtn) {
-            const headers = ['Nama Siswa', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS'];
-            const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+            const currentClass = appState.selectedScoreClass || (appState.currentUser?.class || '').split(',')[0]?.trim() || '';
+            const isFlexibleMatch = (itemClass) => {
+                const ic = String(itemClass || '').trim();
+                const target = String(currentClass || '').trim();
+                if (ic === target) return true;
+                return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+            };
+            const headers = ['Nama Siswa', 'Kelas', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS'];
+            const classStudents = students.filter(s => (s.type === 'student' || !s.type) && isFlexibleMatch(s.student_class));
             const sampleData = classStudents.map(s => ({
                 'Nama Siswa': s.student_name,
+                'Kelas': s.student_class,
                 'NISN': s.student_nisn,
                 'Mata Pelajaran': appState.filterSubject || 'Matematika',
                 'Formatif': '',
@@ -96,23 +112,31 @@ export function setupGuruScoresHandlers() {
                 'MID': '',
                 'PAS': ''
             }));
-            downloadCSV(headers, sampleData.length > 0 ? sampleData : [{ 'Nama Siswa': 'Contoh Siswa', 'NISN': '1234567890', 'Mata Pelajaran': 'Matematika', 'Formatif': 80, 'Sumatif': 85, 'MID': 80, 'PAS': 90 }], 'Template_Nilai.csv');
+            downloadCSV(headers, sampleData.length > 0 ? sampleData : [{ 'Nama Siswa': 'Contoh Siswa', 'Kelas': currentClass, 'NISN': '1234567890', 'Mata Pelajaran': 'Matematika', 'Formatif': 80, 'Sumatif': 85, 'MID': 80, 'PAS': 90 }], `Template_Nilai_${currentClass}.csv`);
             return;
         }
 
         // Export Excel Button
         const exportExcelBtn = e.target.closest('#export-excel-btn');
         if (exportExcelBtn) {
-            const headers = ['Nama Siswa', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS', 'Raport'];
-            const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+            const currentClass = appState.selectedScoreClass || (appState.currentUser?.class || '').split(',')[0]?.trim() || '';
+            const isFlexibleMatch = (itemClass) => {
+                const ic = String(itemClass || '').trim();
+                const target = String(currentClass || '').trim();
+                if (ic === target) return true;
+                return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+            };
+            const headers = ['Nama Siswa', 'Kelas', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS', 'Raport'];
+            const classStudents = students.filter(s => (s.type === 'student' || !s.type) && isFlexibleMatch(s.student_class));
             const exportData = [];
             classStudents.forEach(s => {
                 const studentId = s.__backendId || s.id;
-                const studentScores = scores.filter(sc => (sc.type === 'score' || !sc.type) && sc.student_id === studentId);
+                const studentScores = scores.filter(sc => (sc.type === 'score' || !sc.type) && String(sc.student_id) === String(studentId));
                 if (studentScores.length > 0) {
                     studentScores.forEach(sc => {
                         exportData.push({
                             'Nama Siswa': s.student_name,
+                            'Kelas': s.student_class,
                             'NISN': s.student_nisn,
                             'Mata Pelajaran': sc.score_subject,
                             'Formatif': sc.score_formatif,
@@ -125,6 +149,7 @@ export function setupGuruScoresHandlers() {
                 } else {
                     exportData.push({
                         'Nama Siswa': s.student_name,
+                        'Kelas': s.student_class,
                         'NISN': s.student_nisn,
                         'Mata Pelajaran': '-',
                         'Formatif': '-',
@@ -135,7 +160,7 @@ export function setupGuruScoresHandlers() {
                     });
                 }
             });
-            downloadCSV(headers, exportData, `Rekap_Nilai_Kelas_${currentUser?.class}.csv`);
+            downloadCSV(headers, exportData, `Rekap_Nilai_Kelas_${currentClass}.csv`);
             return;
         }
 
@@ -161,7 +186,7 @@ export function setupGuruScoresHandlers() {
             reader.onload = async (event) => {
                 const text = event.target.result;
                 try {
-                    const expectedHeaders = ['Nama Siswa', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS'];
+                    const expectedHeaders = ['Nama Siswa', 'Kelas', 'NISN', 'Mata Pelajaran', 'Formatif', 'Sumatif', 'MID', 'PAS'];
                     const data = parseCSV(text, expectedHeaders);
                     if (data.length === 0) {
                         showToast('File CSV kosong atau tidak valid', 'error');
@@ -197,7 +222,7 @@ export function setupGuruScoresHandlers() {
                             score_pas: pas,
                             score_raport: raportScore,
                             score_value: raportScore,
-                            score_teacher_class: appState.currentUser?.class,
+                            score_teacher_class: student.student_class,
                             score_teacher_nip: appState.currentUser?.nip,
                             score_teacher_name: appState.currentUser?.name,
                             teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
@@ -225,8 +250,22 @@ export function setupGuruScoresHandlers() {
         const closeScoBtn = document.getElementById('close-score-modal');
         const cancelScoBtn = document.getElementById('cancel-score-modal');
         const saveScoBtn = document.getElementById('save-score-btn');
-        if (closeScoBtn) closeScoBtn.onclick = closeModal;
-        if (cancelScoBtn) cancelScoBtn.onclick = closeModal;
+        if (closeScoBtn) closeScoBtn.onclick = () => {
+            updateState({ selectedModalScoreClass: null });
+            closeModal();
+        };
+        if (cancelScoBtn) cancelScoBtn.onclick = () => {
+            updateState({ selectedModalScoreClass: null });
+            closeModal();
+        };
+
+        const modalClassSelect = document.getElementById('modal-score-class');
+        if (modalClassSelect) {
+            modalClassSelect.onchange = (e) => {
+                updateState({ selectedModalScoreClass: e.target.value });
+                window.dispatchEvent(new CustomEvent('app-state-changed'));
+            };
+        }
 
         const previewEl = document.getElementById('modal-score-raport-preview');
         const calculateRaport = () => {
@@ -250,15 +289,18 @@ export function setupGuruScoresHandlers() {
                 if (!form.reportValidity()) return;
                 saveScoBtn.disabled = true;
 
+                const studentId = document.getElementById('modal-score-student').value;
+                const student = appState.students.find(s => String(s.__backendId || s.id) === String(studentId));
+
                 const scoreData = {
-                    student_id: document.getElementById('modal-score-student').value,
+                    student_id: studentId,
                     score_subject: document.getElementById('modal-score-subject').value,
                     score_formatif: parseFloat(document.getElementById('modal-score-formatif').value) || 0,
                     score_sumatif: parseFloat(document.getElementById('modal-score-sumatif').value) || 0,
                     score_mid: parseFloat(document.getElementById('modal-score-mid').value) || 0,
                     score_pas: parseFloat(document.getElementById('modal-score-pas').value) || 0,
                     score_raport: calculateRaport(),
-                    score_teacher_class: appState.currentUser?.class,
+                    score_teacher_class: student?.student_class || appState.currentUser?.class,
                     score_teacher_nip: appState.currentUser?.nip,
                     score_teacher_name: appState.currentUser?.name,
                     teacher_id: appState.currentUser?.__backendId || appState.currentUser?.id,
@@ -295,11 +337,18 @@ document.querySelectorAll('.print-score-btn').forEach(btn => {
 });
 
 function printScoreReport(type) {
-    const { students, scores, currentUser, config } = appState;
-    const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+    const { students, scores, currentUser, config, selectedScoreClass } = appState;
+    const currentClass = selectedScoreClass || (currentUser?.class || '').split(',')[0]?.trim() || '';
+    const isFlexibleMatch = (itemClass) => {
+        const ic = String(itemClass || '').trim();
+        const target = String(currentClass || '').trim();
+        if (ic === target) return true;
+        return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+    };
+    const classStudents = students.filter(s => (s.type === 'student' || !s.type) && isFlexibleMatch(s.student_class));
     const schoolName = currentUser?.school_name || config.school_name || 'SDN 1 PONCOWATI';
     const teacherName = currentUser?.name || 'Guru Kelas';
-    const className = currentUser?.class || '-';
+    const className = currentClass || '-';
     const subjects = SUBJECT_LIST;
 
     let title = 'LAPORAN NILAI SISWA';

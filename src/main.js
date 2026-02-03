@@ -47,14 +47,30 @@ async function initApp() {
                 const filteredByType = items.filter(d => d.type === type);
                 if (!isGuru) return filteredByType;
 
+                const managedClasses = (appState.currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+
+                const isFlexibleMatch = (itemClass) => {
+                    if (!itemClass) return false;
+                    return managedClasses.some(mc => {
+                        const ic = String(itemClass).trim();
+                        const target = String(mc).trim();
+                        if (ic === target) return true;
+                        // Match if ic starts with target and then has a non-digit (e.g. '2' matches '2A')
+                        return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+                    });
+                };
+
                 // For teachers, filter data where teacher_id matches or where it's a student in their class
-                // Special case for students: filter by class if teacher_id not set
                 if (type === 'student') {
-                    return filteredByType.filter(s => s.teacher_id === teacherId || s.student_class === appState.currentUser?.class);
+                    return filteredByType.filter(s => s.teacher_id === teacherId || isFlexibleMatch(s.student_class));
                 }
 
-                // For other types, only show data created by this teacher
-                return filteredByType.filter(d => d.teacher_id === teacherId);
+                // For other types, show data created by this teacher OR data matching their managed classes
+                return filteredByType.filter(d => {
+                    const isCreator = d.teacher_id === teacherId;
+                    const itemClass = d.attendance_class || d.score_teacher_class || d.journal_class || d.modul_class || d.assignment_class;
+                    return isCreator || isFlexibleMatch(itemClass);
+                });
             };
 
             const configRecord = data.find(d => d.type === 'config');

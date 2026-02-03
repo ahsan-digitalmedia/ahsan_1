@@ -2,15 +2,25 @@ import { appState, SUBJECT_LIST } from '../../core/state.js';
 import { getScoreBadgeClass } from '../../core/utils.js';
 
 export function renderGuruScoresPage() {
-  const { scores, students, currentUser, filterSubject, scoreViewMode } = appState;
+  const { scores, students, currentUser, filterSubject, scoreViewMode, selectedScoreClass } = appState;
+  const teacherId = currentUser?.__backendId || currentUser?.id;
+  const managedClasses = (currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
+  const currentClass = selectedScoreClass || managedClasses[0] || '';
+
+  const isMatch = (itemClass) => {
+    const ic = String(itemClass || '').trim();
+    const target = String(currentClass || '').trim();
+    if (ic === target) return true;
+    return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
+  };
 
   let classScores = scores.filter(s => {
     const isScoreType = s.type === 'score' || !s.type;
-    // Isolation: Match by NIP if available, otherwise by class (legacy)
-    const belongsToUser = currentUser ? (s.score_teacher_nip === currentUser.nip || (!s.score_teacher_nip && s.score_teacher_class === currentUser.class)) : true;
-    return isScoreType && belongsToUser;
+    const belongsToUser = currentUser ? (String(s.score_teacher_nip) === String(currentUser.nip) || String(s.teacher_id) === String(teacherId)) : true;
+    return isScoreType && belongsToUser && isMatch(s.score_teacher_class);
   });
-  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && s.student_class === currentUser?.class);
+
+  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && isMatch(s.student_class));
   const subjects = SUBJECT_LIST;
 
   if (filterSubject) {
@@ -30,6 +40,16 @@ export function renderGuruScoresPage() {
             <button id="view-rekap-btn" class="px-5 py-2.5 rounded-xl border ${isRekap ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-slate-200 text-slate-600'} font-medium transition-colors">
               Rekap Nilai
             </button>
+          </div>
+
+          <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Pilih Kelas:</span>
+            <select id="score-class-select" class="bg-transparent text-sm font-medium text-slate-700 outline-none border-none p-0 cursor-pointer min-w-[80px]">
+              ${managedClasses.map(c => {
+    const label = c.toLowerCase().startsWith('kelas') ? c : `Kelas ${c}`;
+    return `<option value="${c}" ${currentClass === c ? 'selected' : ''}>${label}</option>`;
+  }).join('')}
+            </select>
           </div>
           
           ${!isRekap ? `
@@ -84,6 +104,7 @@ export function renderGuruScoresPage() {
             <thead class="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nama Siswa</th>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Kelas</th>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Mata Pelajaran</th>
                   <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Formatif</th>
                   <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Sumatif</th>
@@ -111,6 +132,9 @@ export function renderGuruScoresPage() {
                         </div>
                         <p class="font-medium text-slate-800">${student?.student_name || 'Tidak Ditemukan'}</p>
                       </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm font-medium text-slate-700">
+                      <span class="px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-xs">${student?.student_class || '-'}</span>
                     </td>
                     <td class="px-6 py-4 text-sm text-slate-600 font-medium">${score.score_subject}</td>
                     <td class="px-6 py-4 text-center text-sm text-slate-600">${score.score_formatif || 0}</td>
@@ -150,29 +174,31 @@ function renderGuruScoresRekapView(classStudents, scores) {
   const subjects = SUBJECT_LIST;
 
   return `
-    <div class="overflow-x-auto">
-      <table class="w-full text-xs">
-        <thead class="bg-slate-50 border-b border-slate-200">
-          <tr>
-            <th rowspan="2" class="px-3 py-4 text-left font-semibold text-slate-600 uppercase border-r border-slate-200 sticky left-0 bg-slate-50 z-10 w-48">Nama Siswa</th>
-            ${subjects.map(sub => `<th colspan="5" class="px-4 py-2 text-center font-semibold text-slate-600 border-r border-slate-200 bg-slate-100">${sub}</th>`).join('')}
-          </tr>
-          <tr>
-            ${subjects.map(() => `
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs">
+      <thead class="bg-slate-50 border-b border-slate-200">
+        <tr>
+          <th rowspan="2" class="px-3 py-4 text-left font-semibold text-slate-600 uppercase border-r border-slate-200 sticky left-0 bg-slate-50 z-10 w-48">Nama Siswa</th>
+          <th rowspan="2" class="px-3 py-4 text-center font-semibold text-slate-600 uppercase border-r border-slate-200 bg-slate-50">Kelas</th>
+          ${subjects.map(sub => `<th colspan="5" class="px-4 py-2 text-center font-semibold text-slate-600 border-r border-slate-200 bg-slate-100">${sub}</th>`).join('')}
+        </tr>
+        <tr>
+          ${subjects.map(() => `
               <th class="px-1 py-1 text-center font-medium text-slate-500 border-r border-slate-100">F</th>
               <th class="px-1 py-1 text-center font-medium text-slate-500 border-r border-slate-100">S</th>
               <th class="px-1 py-1 text-center font-medium text-slate-500 border-r border-slate-100">M</th>
               <th class="px-1 py-1 text-center font-medium text-slate-500 border-r border-slate-100">P</th>
               <th class="px-1 py-1 text-center font-bold text-blue-600 border-r border-slate-200 bg-blue-50">R</th>
             `).join('')}
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          ${classStudents.map((student, sIdx) => {
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        ${classStudents.map((student, sIdx) => {
     const studentId = student.__backendId || student.id;
     return `
               <tr class="hover:bg-slate-50">
                 <td class="px-3 py-3 border-r border-slate-200 sticky left-0 bg-white z-10 font-medium text-slate-800">${student.student_name}</td>
+                <td class="px-3 py-3 border-r border-slate-200 text-center text-slate-600 font-medium">${student.student_class || '-'}</td>
                 ${subjects.map(sub => {
       const score = scores.find(s => s.student_id === studentId && s.score_subject === sub);
       return `
@@ -186,8 +212,8 @@ function renderGuruScoresRekapView(classStudents, scores) {
               </tr>
             `;
   }).join('')}
-        </tbody>
-      </table>
-    </div>
+      </tbody>
+    </table>
+  </div>
   `;
 }
