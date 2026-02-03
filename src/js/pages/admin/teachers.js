@@ -55,8 +55,8 @@ export function renderTeachersPage() {
                     <div class="text-xs text-slate-500">Telp: ${teacher.phone || '-'}</div>
                   </td>
                   <td class="px-6 py-4">
-                    <div class="text-sm text-slate-800 font-medium">Kelas ${teacher.class || '-'}</div>
-                    <div class="text-xs text-slate-500">${teacher.subject || '-'}</div>
+                    <div class="text-sm text-slate-800 font-medium whitespace-pre-line">${(teacher.class || '').split(',').map(c => c.trim()).filter(c => c).map(c => c.toLowerCase().startsWith('kelas') ? c : `Kelas ${c}`).join('\n')}</div>
+                    <div class="text-xs text-slate-500 mt-1">${teacher.subject || '-'}</div>
                   </td>
                   <td class="px-6 py-4">
                     <span class="inline-flex px-2 py-1 text-[10px] font-bold uppercase rounded-lg ${teacher.status === 'active' ? 'bg-emerald-100 text-emerald-700' : (teacher.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700')}">

@@ -44,9 +44,39 @@ function renderTeacherModal(mode, item) {
                 <label class="block text-sm font-medium text-slate-700 mb-1">NIP (18 digit) *</label>
                 <input type="text" id="modal-nip" value="${item?.nip || ''}" placeholder="19XXXXXXXXXXXXXX" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Kelas *</label>
-                <input type="text" id="modal-class" value="${item?.class || ''}" placeholder="Cth: 1 atau 1a" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
+            </div>
+            <div class="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide">Kelas yang Diampu *</label>
+                <button id="add-modal-class-btn" type="button" class="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm transition-all hover:shadow">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                  Tambah Kelas
+                </button>
+              </div>
+              <div id="modal-classes-container" class="space-y-3">
+                ${(() => {
+      const managedClasses = (item?.class || '').split(',').map(c => c.trim()).filter(c => c);
+      const rows = managedClasses.length > 0 ? managedClasses : [''];
+      return rows.map((c, idx) => {
+        const level = (c.match(/^\d+/) || ['1'])[0];
+        const suffix = c.replace(/^\d+/, '');
+        return `
+                      <div class="modal-class-row flex items-center gap-3 animate-fadeIn">
+                        <div class="flex-1 grid grid-cols-2 gap-2">
+                           <select class="modal-class-level input-modern w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium">
+                             ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `<option value="${num}" ${level == num ? 'selected' : ''}>Kelas ${num}</option>`).join('')}
+                           </select>
+                           <input type="text" class="modal-class-suffix input-modern w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium" value="${suffix}" placeholder="Rombel (A, B, dll)">
+                        </div>
+                        ${rows.length > 1 ? `
+                          <button type="button" class="remove-modal-class-btn p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                          </button>
+                        ` : ''}
+                      </div>
+                    `;
+      }).join('');
+    })()}
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">

@@ -70,6 +70,35 @@ export function setupAdminTeachersHandlers() {
                 window.dispatchEvent(new CustomEvent('app-state-changed'));
                 return;
             }
+
+            // --- Modal Dynamic Class Fields ---
+            const addClassBtn = e.target.closest('#add-modal-class-btn');
+            if (addClassBtn) {
+                const container = document.getElementById('modal-classes-container');
+                const newRow = document.createElement('div');
+                newRow.className = 'modal-class-row flex items-center gap-3 animate-fadeIn';
+                newRow.innerHTML = `
+                    <div class="flex-1 grid grid-cols-2 gap-2">
+                        <select class="modal-class-level input-modern w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium">
+                            ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `<option value="${num}">Kelas ${num}</option>`).join('')}
+                        </select>
+                        <input type="text" class="modal-class-suffix input-modern w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium" placeholder="Rombel (A, B, dll)">
+                    </div>
+                    <button type="button" class="remove-modal-class-btn p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                container.appendChild(newRow);
+                return;
+            }
+
+            const removeClassBtn = e.target.closest('.remove-modal-class-btn');
+            if (removeClassBtn) {
+                const row = removeClassBtn.closest('.modal-class-row');
+                row.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => row.remove(), 200);
+                return;
+            }
         });
     }
 
@@ -101,17 +130,36 @@ export function setupAdminTeachersHandlers() {
                 return;
             }
 
+            const name = document.getElementById('modal-name').value;
+            const school_name = document.getElementById('modal-school').value;
+            const npsn = document.getElementById('modal-npsn').value;
+            const nip = document.getElementById('modal-nip').value;
+            const email = document.getElementById('modal-email').value;
+            const phone = document.getElementById('modal-phone').value;
+            const subject = document.getElementById('modal-subject').value;
+            const password = document.getElementById('modal-password').value;
+            const status = document.getElementById('modal-status').value;
+
+            // Collect classes
+            const classRows = document.querySelectorAll('.modal-class-row');
+            const managedClasses = [];
+            classRows.forEach(row => {
+                const level = row.querySelector('.modal-class-level').value;
+                const suffix = (row.querySelector('.modal-class-suffix').value || '').trim().toUpperCase();
+                managedClasses.push(`${level}${suffix}`);
+            });
+
             const teacherData = {
-                name: document.getElementById('modal-name').value,
-                school_name: document.getElementById('modal-school').value,
-                npsn: document.getElementById('modal-npsn').value,
-                nip: document.getElementById('modal-nip').value,
-                class: document.getElementById('modal-class').value,
-                email: document.getElementById('modal-email').value,
-                phone: document.getElementById('modal-phone').value,
-                subject: document.getElementById('modal-subject').value,
-                password: document.getElementById('modal-password').value,
-                status: document.getElementById('modal-status').value,
+                name,
+                school_name,
+                npsn,
+                nip,
+                class: managedClasses.join(', '),
+                email,
+                phone,
+                subject,
+                password,
+                status,
                 type: 'teacher'
             };
 
