@@ -4,8 +4,8 @@ import { showToast, generateId, closeModal } from '../../core/utils.js';
 
 export function setupAdminTeachersHandlers() {
     const contentArea = document.getElementById('content-area');
-    if (contentArea) {
-        contentArea.addEventListener('click', async (e) => {
+    if (contentArea && !contentArea._teachersHandler) {
+        const handler = async (e) => {
             // Edit Button
             const editBtn = e.target.closest('.edit-btn');
             if (editBtn) {
@@ -70,11 +70,20 @@ export function setupAdminTeachersHandlers() {
                 window.dispatchEvent(new CustomEvent('app-state-changed'));
                 return;
             }
+        };
+        contentArea.addEventListener('click', handler);
+        contentArea._teachersHandler = handler;
+    }
 
+    // --- Modal Handler (Standard for persistent or re-rendered elements) ---
+    // Handle Save and dynamic fields using delegation on the form or document
+    if (!window._adminTeacherModalInited) {
+        document.addEventListener('click', (e) => {
             // --- Modal Dynamic Class Fields ---
             const addClassBtn = e.target.closest('#add-modal-class-btn');
             if (addClassBtn) {
                 const container = document.getElementById('modal-classes-container');
+                if (!container) return;
                 const newRow = document.createElement('div');
                 newRow.className = 'modal-class-row flex items-center gap-3 animate-fadeIn';
                 newRow.innerHTML = `
@@ -95,11 +104,14 @@ export function setupAdminTeachersHandlers() {
             const removeClassBtn = e.target.closest('.remove-modal-class-btn');
             if (removeClassBtn) {
                 const row = removeClassBtn.closest('.modal-class-row');
-                row.classList.add('scale-95', 'opacity-0');
-                setTimeout(() => row.remove(), 200);
+                if (row) {
+                    row.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => row.remove(), 200);
+                }
                 return;
             }
         });
+        window._adminTeacherModalInited = true;
     }
 
     const closeModalBtn = document.getElementById('close-modal');
