@@ -59,9 +59,22 @@ export function renderGuruProfilePage() {
               <p class="text-xs text-slate-600 mb-1">Sekolah</p>
               <p class="font-semibold text-slate-800 truncate" title="${currentUser?.school_name || '-'}">${currentUser?.school_name || '-'}</p>
             </div>
-            <div class="p-4 bg-slate-50 rounded-xl col-span-2 md:col-span-1">
+            <div class="p-4 bg-slate-50 rounded-xl">
               <p class="text-xs text-slate-600 mb-1">NPSN</p>
               <p class="font-semibold text-slate-800">${currentUser?.npsn || '-'}</p>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-xl">
+              <p class="text-xs text-slate-600 mb-1">Semester</p>
+              <p class="font-semibold text-slate-800">${currentUser?.semester || '-'}</p>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-xl">
+              <p class="text-xs text-slate-600 mb-1">Tahun Pelajaran</p>
+              <p class="font-semibold text-slate-800">${currentUser?.academic_year || '-'}</p>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-xl col-span-2">
+              <p class="text-xs text-slate-600 mb-1">Kepala Sekolah</p>
+              <p class="font-semibold text-slate-800">${currentUser?.principal_name || '-'}</p>
+              <p class="text-[10px] text-slate-500 mt-1">NIP. ${currentUser?.principal_nip || '-'}</p>
             </div>
           </div>
         </div>
@@ -83,7 +96,12 @@ export function renderGuruProfilePage() {
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-2">Tanggal Bergabung</label>
-            <p class="px-4 py-3 bg-slate-50 rounded-xl text-slate-700">${currentUser?.joinDate ? formatDate(currentUser.joinDate) : '-'}</p>
+            <p class="px-4 py-3 bg-slate-50 rounded-xl text-slate-700">
+              ${(() => {
+      const date = currentUser?.joinDate || currentUser?.created_at;
+      return date ? formatDate(date) : '-';
+    })()}
+            </p>
           </div>
         </div>
       </div>

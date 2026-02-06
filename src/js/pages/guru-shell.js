@@ -55,7 +55,7 @@ export function renderGuruApp() {
                     </svg>
                   </button>
                   <!-- Dropdown Content -->
-                  <div id="header-menu-dropdown" class="hidden absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 animate-fadeIn origin-top-right">
+                  <div id="header-menu-dropdown" class="js-dropdown hidden absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 animate-fadeIn origin-top-right">
                     <p class="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Akses Cepat</p>
                     <div class="space-y-1">
                       <button data-page="guru-profile" onclick="document.getElementById('header-menu-dropdown').classList.add('hidden')" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-purple-50 text-slate-600 hover:text-purple-600 transition-colors text-left group">

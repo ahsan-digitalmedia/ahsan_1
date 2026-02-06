@@ -298,7 +298,7 @@ async function downloadModulAjarPDF(id) {
       <div style="text-align: center; border-bottom: 3px double #000; margin-bottom: 20px; padding-bottom: 10px;">
         <h2 style="margin: 0; font-size: 18px; font-weight: bold; text-transform: uppercase;">MODUL AJAR KURIKULUM MERDEKA</h2>
         <h3 style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">${schoolName}</h3>
-        <p style="margin: 5px 0 0 0; font-size: 12px;">Tahun Pelajaran ${new Date().getFullYear()}/${new Date().getFullYear() + 1}</p>
+        <p style="margin: 5px 0 0 0; font-size: 12px;">Tahun Pelajaran ${currentUser?.academic_year || '2024/2025'} | Semester ${currentUser?.semester || '-'}</p>
       </div>
 
       <div style="margin-bottom: 20px;">
@@ -369,11 +369,11 @@ async function downloadModulAjarPDF(id) {
       <div style="margin-top: 50px; display: flex; justify-content: space-between; page-break-inside: avoid;">
         <div style="text-align: center; width: 40%;">
           <p style="font-size: 12px; margin-bottom: 60px;">Mengetahui,<br>Kepala Sekolah</p>
-          <p style="font-weight: bold; text-decoration: underline; font-size: 12px;">( ............................................ )</p>
-          <p style="font-size: 12px;">NIP. ............................................</p>
+          <p style="font-weight: bold; text-decoration: underline; font-size: 12px;">${currentUser?.principal_name || '( ............................................ )'}</p>
+          <p style="font-size: 12px;">NIP. ${currentUser?.principal_nip || '............................................'}</p>
         </div>
         <div style="text-align: center; width: 40%;">
-          <p style="font-size: 12px; margin-bottom: 60px;">Lampung, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br>Guru Mata Pelajaran</p>
+          <p style="font-size: 12px; margin-bottom: 60px;">Poncowati, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br>Guru Mata Pelajaran</p>
           <p style="font-weight: bold; text-decoration: underline; font-size: 12px;">${teacherName}</p>
           <p style="font-size: 12px;">NIP. ${teacherNip}</p>
         </div>

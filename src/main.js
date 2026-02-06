@@ -47,38 +47,30 @@ async function initApp() {
                 const filteredByType = items.filter(d => d.type === type);
                 if (!isGuru) return filteredByType;
 
-                const managedClasses = (appState.currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
-
-                const isFlexibleMatch = (itemClass) => {
-                    if (!itemClass) return false;
-                    return managedClasses.some(mc => {
-                        const ic = String(itemClass).trim();
-                        const target = String(mc).trim();
-                        if (ic === target) return true;
-                        // Match if ic starts with target and then has a non-digit (e.g. '2' matches '2A')
-                        return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
-                    });
-                };
-
-                // For teachers, filter data where teacher_id matches or where it's a student in their class
-                if (type === 'student') {
-                    return filteredByType.filter(s => s.teacher_id === teacherId || isFlexibleMatch(s.student_class));
-                }
-
-                // For other types, show data created by this teacher OR data matching their managed classes
-                return filteredByType.filter(d => {
-                    const isCreator = d.teacher_id === teacherId;
-                    const itemClass = d.attendance_class || d.score_teacher_class || d.journal_class || d.modul_class || d.assignment_class;
-                    return isCreator || isFlexibleMatch(itemClass);
-                });
+                // For teachers, strictly filter by teacher_id.
+                // Each teacher only sees data they created/uploaded.
+                return filteredByType.filter(d => d.teacher_id === teacherId);
             };
 
             const configRecord = data.find(d => d.type === 'config');
             const newConfig = configRecord ? Object.assign({}, defaultConfig, configRecord) : Object.assign({}, defaultConfig);
 
+            const teachersData = data.filter(d => d.type === 'teacher');
+            const filteredTeachers = isGuru ? teachersData.filter(d => d.id === teacherId || d.__backendId === teacherId) : teachersData;
+
+            // Sync currentUser if logged in as guru to ensure we have latest fields (like created_at/joinDate)
+            let updatedCurrentUser = appState.currentUser;
+            if (isGuru) {
+                const liveTeacherRecord = teachersData.find(d => d.id === teacherId || d.__backendId === teacherId);
+                if (liveTeacherRecord) {
+                    updatedCurrentUser = liveTeacherRecord;
+                }
+            }
+
             updateState({
                 config: newConfig,
-                teachers: data.filter(d => d.type === 'teacher'), // Admin sees all, Guru sees all (for now) or we can filter
+                teachers: filteredTeachers,
+                currentUser: updatedCurrentUser,
                 assignments: filterFn(data, 'assignment'),
                 students: filterFn(data, 'student'),
                 attendances: filterFn(data, 'attendance'),
@@ -144,3 +136,16 @@ async function handleMigration(supabaseSdk) {
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Global click listener to close dropdowns when clicking outside
+window.addEventListener('click', (e) => {
+    const dropdowns = document.querySelectorAll('.js-dropdown');
+    dropdowns.forEach(el => {
+        if (!el.classList.contains('hidden')) {
+            const toggleBtn = el.previousElementSibling;
+            if (!el.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
+                el.classList.add('hidden');
+            }
+        }
+    });
+});

@@ -105,8 +105,12 @@ export function setupGuruProfileHandlers() {
 
                 const newClass = classes;
                 const newSubject = document.getElementById('profile-subject')?.value || '';
+                const newPrincipalName = document.getElementById('profile-principal-name')?.value || '';
+                const newPrincipalNip = document.getElementById('profile-principal-nip')?.value || '';
+                const newSemester = document.getElementById('profile-semester')?.value || '';
+                const newAcademicYear = document.getElementById('profile-academic-year')?.value || '';
 
-                if (!newName || !newSchool || !newNpsn || !newClass || !newSubject || !newPhone) {
+                if (!newName || !newSchool || !newNpsn || !newClass || !newSubject || !newPhone || !newPrincipalName || !newSemester || !newAcademicYear) {
                     showToast('Mohon lengkapi seluruh data wajib (*)', 'error');
                     return;
                 }
@@ -130,7 +134,11 @@ export function setupGuruProfileHandlers() {
                         school_name: newSchool,
                         npsn: newNpsn,
                         class: newClass,
-                        subject: newSubject
+                        subject: newSubject,
+                        principal_name: newPrincipalName,
+                        principal_nip: newPrincipalNip,
+                        semester: newSemester,
+                        academic_year: newAcademicYear
                     };
 
                     const result = await window.dataSdk.update(updatedUser);

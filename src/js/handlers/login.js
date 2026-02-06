@@ -170,7 +170,7 @@ export function setupLoginHandlers() {
                     const isProfileIncomplete = !teacher.nip || teacher.nip === '-' || !teacher.subject || teacher.subject === '-' || !teacher.class || !teacher.npsn;
 
                     updateState({
-                        currentUser: teacher,
+                        currentUser: { ...teacher },
                         currentUserType: 'guru',
                         isLoggedIn: true,
                         rememberMe: rememberMe,

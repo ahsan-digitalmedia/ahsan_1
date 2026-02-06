@@ -172,7 +172,8 @@ export function setupAdminTeachersHandlers() {
                 subject,
                 password,
                 status,
-                type: 'teacher'
+                type: 'teacher',
+                joinDate: new Date().toISOString()
             };
 
             try {

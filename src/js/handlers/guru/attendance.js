@@ -377,11 +377,13 @@ function printAttendanceReport(type, dateStr) {
         <div class="meta-grid">
           <div class="meta-left">
             <p><strong>Kelas:</strong> ${className}</p>
-            <p><strong>Wali Kelas:</strong> ${teacherName}</p>
+            <p><strong>Semester:</strong> ${currentUser?.semester || '-'}</p>
+            <p><strong>Tahun Pelajaran:</strong> ${currentUser?.academic_year || '-'}</p>
           </div>
           <div class="meta-right" style="text-align: right;">
+            <p><strong>Guru:</strong> ${teacherName}</p>
+            <p><strong>Status:</strong> ${currentUser?.subject === 'Guru Kelas' ? 'Guru Kelas' : `Guru Mapel (${currentUser?.subject || '-'})`}</p>
             <p><strong>${dateInfo}</strong></p>
-            <p>Dicetak: ${new Date().toLocaleString('id-ID', { dateStyle: 'medium' })}</p>
           </div>
         </div>
         <table>
@@ -394,13 +396,15 @@ function printAttendanceReport(type, dateStr) {
             <p>Mengetahui,</p>
             <p>Kepala Sekolah</p>
             <div class="sig-space"></div>
-            <p class="sig-name">( ........................................ )</p>
+            <p class="sig-name">${currentUser?.principal_name || '( ........................................ )'}</p>
+            <p>NIP. ${currentUser?.principal_nip || '........................................'}</p>
           </div>
           <div class="sig-box">
-            <p>${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-            <p>Guru Kelas,</p>
+            <p>Poncowati, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p>${currentUser?.subject === 'Guru Kelas' ? 'Guru Kelas,' : 'Guru Mata Pelajaran,'}</p>
             <div class="sig-space"></div>
             <p class="sig-name">${teacherName}</p>
+            <p>NIP. ${currentUser?.nip || '-'}</p>
           </div>
         </div>
         <script>window.onload = () => { window.print(); };</script>

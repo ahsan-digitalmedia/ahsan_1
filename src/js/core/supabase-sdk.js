@@ -40,11 +40,12 @@ export class SupabaseDataSdk {
 
             console.log(`Supabase SDK: Loaded ${data.length} records successfully.`);
 
-            // Map data to the internal format (extract content and add id/type)
+            // Map data to the internal format (extract content and add id/type/created_at)
             this.data = data.map(d => ({
                 ...d.content,
                 __backendId: d.id,
-                type: d.type
+                type: d.type,
+                created_at: d.created_at
             }));
 
             // 2. Notify initial data
@@ -77,12 +78,22 @@ export class SupabaseDataSdk {
         if (eventType === 'INSERT') {
             const exists = this.data.some(d => d.__backendId === newRecord.id);
             if (!exists) {
-                const newItem = { ...newRecord.content, __backendId: newRecord.id, type: newRecord.type };
+                const newItem = {
+                    ...newRecord.content,
+                    __backendId: newRecord.id,
+                    type: newRecord.type,
+                    created_at: newRecord.created_at
+                };
                 this.data.push(newItem);
             }
         } else if (eventType === 'UPDATE') {
             const index = this.data.findIndex(d => d.__backendId === newRecord.id);
-            const updatedItem = { ...newRecord.content, __backendId: newRecord.id, type: newRecord.type };
+            const updatedItem = {
+                ...newRecord.content,
+                __backendId: newRecord.id,
+                type: newRecord.type,
+                created_at: newRecord.created_at
+            };
             if (index !== -1) {
                 this.data[index] = updatedItem;
             } else {
@@ -121,7 +132,12 @@ export class SupabaseDataSdk {
 
         console.log('Supabase SDK: Record created successfully:', data[0].id);
 
-        const createdItem = { ...data[0].content, __backendId: data[0].id, type: data[0].type };
+        const createdItem = {
+            ...data[0].content,
+            __backendId: data[0].id,
+            type: data[0].type,
+            created_at: data[0].created_at
+        };
         this.data.push(createdItem);
         this._notifyListeners();
 
@@ -150,7 +166,12 @@ export class SupabaseDataSdk {
         const updatedRecord = data && data[0] ? data[0] : null;
         if (updatedRecord) {
             console.log('Supabase SDK: Record updated successfully.');
-            const updatedItem = { ...updatedRecord.content, __backendId: updatedRecord.id, type: updatedRecord.type };
+            const updatedItem = {
+                ...updatedRecord.content,
+                __backendId: updatedRecord.id,
+                type: updatedRecord.type,
+                created_at: updatedRecord.created_at
+            };
             const index = this.data.findIndex(d => d.__backendId === updatedRecord.id);
             if (index !== -1) {
                 this.data[index] = updatedItem;

@@ -56,8 +56,8 @@ export function renderGuruAttendancePage() {
           </button>
         </div>
         <div class="flex flex-col md:flex-row gap-2">
-          <div class="relative group">
-            <button class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 flex items-center gap-2 transition-all">
+          <div class="relative">
+            <button onclick="document.getElementById('print-attendance-dropdown').classList.toggle('hidden')" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 flex items-center gap-2 transition-all">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
               </svg>
@@ -66,14 +66,14 @@ export function renderGuruAttendancePage() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </button>
-            <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 hidden group-hover:block z-50">
-              <button class="print-report-btn w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2" data-type="daily">
+            <div id="print-attendance-dropdown" class="js-dropdown absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 hidden z-50">
+              <button onclick="this.parentElement.classList.add('hidden')" class="print-report-btn w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2" data-type="daily">
                 <span>📅</span> Cetak Harian
               </button>
-              <button class="print-report-btn w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2" data-type="weekly">
+              <button onclick="this.parentElement.classList.add('hidden')" class="print-report-btn w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2" data-type="weekly">
                 <span>📅</span> Cetak Mingguan
               </button>
-              <button class="print-report-btn w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2" data-type="monthly">
+              <button onclick="this.parentElement.classList.add('hidden')" class="print-report-btn w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2" data-type="monthly">
                 <span>📅</span> Cetak Bulanan
               </button>
             </div>

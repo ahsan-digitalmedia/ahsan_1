@@ -102,12 +102,19 @@ function renderScoreModal(mode, item) {
     });
   };
   const classStudents = students.filter(s => (s.type === 'student' || !s.type) && (String(s.teacher_id) === String(teacherId) || isFlexibleMatch(s.student_class)));
-  const subjects = SUBJECT_LIST;
+  const subjects = (currentUser?.subject && currentUser.subject !== 'Guru Kelas')
+    ? [currentUser.subject]
+    : SUBJECT_LIST;
+
+  // Weights (Default or from item)
+  const weightFS = item?.weight_fs || 80;
+  const weightPTS = item?.weight_pts || 10;
+  const weightPAS = item?.weight_pas || 10;
 
   return `
     <div class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl shadow-2xl w-[95%] md:w-full max-w-lg animate-fadeIn">
-        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+      <div class="bg-white rounded-2xl shadow-2xl w-[95%] md:w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-fadeIn">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
           <h3 class="text-lg font-semibold text-slate-800">${mode === 'edit' ? 'Edit Nilai Siswa' : 'Input Nilai Baru'}</h3>
           <button id="close-score-modal" class="p-2 rounded-xl hover:bg-slate-100 transition-colors">
             <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,22 +122,33 @@ function renderScoreModal(mode, item) {
             </svg>
           </button>
         </div>
-        <div class="p-6">
-          <form id="score-form" class="space-y-4">
-            ${mode === 'add' ? `
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Kelas *</label>
-              <select id="modal-score-class" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
-                <option value="">Semua Kelas</option>
-                ${managedClasses.map(c => {
+        
+        <div class="p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar">
+          <form id="score-form" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${mode === 'add' ? `
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pilih Kelas *</label>
+                <select id="modal-score-class" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
+                  <option value="">Semua Kelas</option>
+                  ${managedClasses.map(c => {
     const label = c.toLowerCase().startsWith('kelas') ? c : `Kelas ${c}`;
     return `<option value="${c}" ${appState.selectedModalScoreClass === c ? 'selected' : ''}>${label}</option>`;
   }).join('')}
-              </select>
+                </select>
+              </div>
+              ` : ''}
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mata Pelajaran *</label>
+                <select id="modal-score-subject" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
+                  <option value="">Pilih Mapel</option>
+                  ${subjects.map(sub => `<option value="${sub}" ${item?.score_subject === sub ? 'selected' : ''}>${sub}</option>`).join('')}
+                </select>
+              </div>
             </div>
-            ` : ''}
+
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Siswa *</label>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pilih Siswa *</label>
               <select id="modal-score-student" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required ${mode === 'edit' ? 'disabled' : ''}>
                 <option value="">Pilih Siswa</option>
                 ${(() => {
@@ -142,43 +160,104 @@ function renderScoreModal(mode, item) {
     })()}
               </select>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">Mata Pelajaran *</label>
-              <select id="modal-score-subject" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm" required>
-                <option value="">Pilih Mapel</option>
-                ${subjects.map(sub => `<option value="${sub}" ${item?.score_subject === sub ? 'selected' : ''}>${sub}</option>`).join('')}
-              </select>
+
+            <!-- Formative Scores -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-indigo-600 uppercase italic">I. Nilai Formatif (F)</label>
+                <span id="avg-formatif-label" class="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg">Rerata: -</span>
+              </div>
+              <div class="grid grid-cols-4 gap-3">
+                ${Array.from({ length: appState.scoreTPCount || 4 }).map((_, i) => {
+      const n = i + 1;
+      return `
+                  <div>
+                    <label class="block text-[10px] text-slate-400 font-bold mb-1">F${n}</label>
+                    <input type="number" id="score-f${n}" value="${item?.[`score_f${n}`] || ''}" placeholder="0" min="0" max="100" class="input-modern w-full px-2 py-2 border border-slate-200 rounded-xl text-center text-sm score-input">
+                  </div>
+                `;
+    }).join('')}
+              </div>
+              <p class="text-[10px] text-slate-400 leading-relaxed italic">* Catatan: Jumlah kolom yang diisi (F1-F${appState.scoreTPCount || 4}) disesuaikan dengan banyaknya Tujuan Pembelajaran (TP) yang sudah dilaksanakan.</p>
             </div>
+
+            <!-- Summative Scores -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-emerald-600 uppercase italic">II. Nilai Sumatif (S)</label>
+                <span id="avg-sumatif-label" class="text-xs font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">Rerata: -</span>
+              </div>
+              <div class="grid grid-cols-4 gap-3">
+                ${Array.from({ length: appState.scoreSumatifCount || 4 }).map((_, i) => {
+      const n = i + 1;
+      return `
+                  <div>
+                    <label class="block text-[10px] text-slate-400 font-bold mb-1">S${n}</label>
+                    <input type="number" id="score-s${n}" value="${item?.[`score_s${n}`] || ''}" placeholder="0" min="0" max="100" class="input-modern w-full px-2 py-2 border border-slate-200 rounded-xl text-center text-sm score-input">
+                  </div>
+                `;
+    }).join('')}
+              </div>
+              <p class="text-[10px] text-slate-400 leading-relaxed italic">* Catatan: Input S1-S${appState.scoreSumatifCount || 4} juga bergantung pada jumlah lingkup materi / TP yang dinilai.</p>
+            </div>
+
+            <!-- PTS & PAS -->
             <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Nilai Formatif</label>
-                <input type="number" id="modal-score-formatif" value="${item?.score_formatif || ''}" placeholder="0-100" min="0" max="100" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm score-input">
+              <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100 space-y-2">
+                <label class="block text-xs font-bold text-amber-600 uppercase italic">III. Nilai PTS</label>
+                <input type="number" id="score-pts" value="${item?.score_mid || item?.score_pts || ''}" placeholder="0-100" min="0" max="100" class="input-modern w-full px-4 py-2.5 border border-amber-200 rounded-xl text-center text-sm font-bold text-amber-900 score-input">
               </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Nilai Sumatif</label>
-                <input type="number" id="modal-score-sumatif" value="${item?.score_sumatif || ''}" placeholder="0-100" min="0" max="100" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm score-input">
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Nilai MID</label>
-                <input type="number" id="modal-score-mid" value="${item?.score_mid || ''}" placeholder="0-100" min="0" max="100" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm score-input">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Nilai PAS</label>
-                <input type="number" id="modal-score-pas" value="${item?.score_pas || ''}" placeholder="0-100" min="0" max="100" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm score-input">
+              <div class="p-4 bg-rose-50 rounded-2xl border border-rose-100 space-y-2">
+                <label class="block text-xs font-bold text-rose-600 uppercase italic">IV. Nilai PAS</label>
+                <input type="number" id="score-pas" value="${item?.score_pas || ''}" placeholder="0-100" min="0" max="100" class="input-modern w-full px-4 py-2.5 border border-rose-200 rounded-xl text-center text-sm font-bold text-rose-900 score-input">
               </div>
             </div>
-            <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
-              <div class="flex justify-between items-center">
-                <span class="text-sm font-semibold text-blue-700">Estimasi Nilai Raport:</span>
-                <span id="modal-score-raport-preview" class="text-lg font-bold text-blue-800">${item?.score_raport || '-'}</span>
+
+            <!-- Calculations and Weights -->
+            <div class="p-5 bg-blue-600 rounded-2xl shadow-lg text-white space-y-4">
+              <div class="flex items-center justify-between border-b border-blue-400/50 pb-2">
+                <h4 class="text-sm font-bold uppercase tracking-wider">Metode Hitung Nilai Akhir (NA)</h4>
+                <div class="flex items-center gap-1 text-[10px] bg-white/20 px-2 py-1 rounded-full">
+                  <span>Satuan Nilai: 100</span>
+                </div>
               </div>
-              <p class="text-[10px] text-blue-600 mt-1 italic">* Rumus: ((F*2) + (S*4) + (M*2) + (P*2)) / 10</p>
+              
+              <div class="grid grid-cols-3 gap-4">
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold text-blue-200 uppercase">% Rerata F&S</label>
+                  <div class="flex items-center gap-2">
+                    <input type="number" id="weight-fs" value="${weightFS}" class="w-full bg-blue-700/50 border border-blue-300/30 rounded-lg px-2 py-1.5 text-center text-sm font-bold outline-none focus:bg-blue-800 transition-all weight-input">
+                    <span class="text-xs">%</span>
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold text-blue-200 uppercase">% PTS</label>
+                  <div class="flex items-center gap-2">
+                    <input type="number" id="weight-pts" value="${weightPTS}" class="w-full bg-blue-700/50 border border-blue-300/30 rounded-lg px-2 py-1.5 text-center text-sm font-bold outline-none focus:bg-blue-800 transition-all weight-input">
+                    <span class="text-xs">%</span>
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold text-blue-200 uppercase">% PAS</label>
+                  <div class="flex items-center gap-2">
+                    <input type="number" id="weight-pas" value="${weightPAS}" class="w-full bg-blue-700/50 border border-blue-300/30 rounded-lg px-2 py-1.5 text-center text-sm font-bold outline-none focus:bg-blue-800 transition-all weight-input">
+                    <span class="text-xs">%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white/10 rounded-xl p-3 flex justify-between items-center mt-2 group hover:bg-white/20 transition-all">
+                <div>
+                  <p class="text-[10px] text-blue-100 font-medium italic">Rumus: {{ (Avg_F_S * W_FS) + (PTS * W_PTS) + (PAS * W_PAS) }} / 100</p>
+                  <p class="text-lg font-bold">NILAI AKHIR (NA)</p>
+                </div>
+                <div id="modal-score-na-preview" class="text-4xl font-black shrink-0">${item?.score_raport || item?.score_value || '-'}</div>
+              </div>
             </div>
           </form>
         </div>
-        <div class="p-6 border-t border-slate-100 flex justify-end gap-3 rounded-b-2xl bg-slate-50">
+
+        <div class="p-6 border-t border-slate-100 flex justify-end gap-3 rounded-b-2xl bg-slate-50 shrink-0">
           <button id="cancel-score-modal" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-white transition-colors">Batal</button>
           <button id="save-score-btn" class="btn-primary px-5 py-2.5 rounded-xl text-white font-medium shadow-lg">Simpan Nilai</button>
         </div>
@@ -197,7 +276,9 @@ function renderModulAjarModal(mode, item) {
     'Bernalar Kritis',
     'Kreatif'
   ];
-  const subjects = SUBJECT_LIST;
+  const subjects = (currentUser?.subject && currentUser.subject !== 'Guru Kelas')
+    ? [currentUser.subject]
+    : SUBJECT_LIST;
 
   return `
     <div class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4">
@@ -524,6 +605,31 @@ function renderProfileModal(mode, item) {
     })()}
             </div>
           </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Nama Kepala Sekolah *</label>
+              <input type="text" id="profile-principal-name" value="${currentUser?.principal_name || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="Nama Kepala Sekolah">
+            </div>
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-slate-500 uppercase ml-1">NIP Kepala Sekolah</label>
+              <input type="text" id="profile-principal-nip" value="${currentUser?.principal_nip || ''}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="NIP Kepala Sekolah">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Semester *</label>
+              <select id="profile-semester" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium">
+                <option value="1 (Ganjil)" ${currentUser?.semester === '1 (Ganjil)' ? 'selected' : ''}>1 (Ganjil)</option>
+                <option value="2 (Genap)" ${currentUser?.semester === '2 (Genap)' ? 'selected' : ''}>2 (Genap)</option>
+              </select>
+            </div>
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Tahun Pelajaran *</label>
+              <input type="text" id="profile-academic-year" value="${currentUser?.academic_year || '2024/2025'}" class="input-modern w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition-all font-medium" placeholder="Cth: 2024/2025">
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-1.5">
               <label class="block text-xs font-bold text-slate-500 uppercase ml-1">Mata Pelajaran *</label>

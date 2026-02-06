@@ -127,17 +127,9 @@ function printJournalReport(type = 'all', dateStr) {
 
     const classJournals = journals.filter(j => {
         const isJournalType = j.type === 'journal' || !j.type;
-        const isOwner = String(j.journal_teacher_nip) === String(currentUser?.nip);
+        const currentClassFilter = selectedJournalClass || '';
 
-        // matches managed classes
-        const matchesAnyManaged = managedClasses.some(mc => {
-            const ic = String(j.journal_class).trim();
-            const target = String(mc).trim();
-            if (ic === target) return true;
-            return ic.startsWith(target) && !/^\d/.test(ic.substring(target.length));
-        });
-
-        if (!(isJournalType && (isOwner || matchesAnyManaged))) return false;
+        if (!isJournalType) return false;
 
         if (currentClassFilter) {
             return isFlexibleMatch(j.journal_class, currentClassFilter);
@@ -243,10 +235,12 @@ function printJournalReport(type = 'all', dateStr) {
                 <div class="meta-item">
                     <p><strong>Nama Guru:</strong> ${teacherName}</p>
                     <p><strong>NIP:</strong> ${currentUser?.nip || '-'}</p>
+                    <p><strong>Semester:</strong> ${currentUser?.semester || '-'}</p>
                 </div>
                 <div class="meta-item">
                     <p><strong>Kelas:</strong> ${className}</p>
                     <p><strong>Mata Pelajaran:</strong> ${currentUser?.subject || '-'}</p>
+                    <p><strong>Tahun Pelajaran:</strong> ${currentUser?.academic_year || '-'}</p>
                 </div>
             </div>
 
@@ -268,8 +262,8 @@ function printJournalReport(type = 'all', dateStr) {
                     <p>Mengetahui,</p>
                     <p>Kepala Sekolah</p>
                     <div class="sig-space"></div>
-                    <p class="sig-name">( ........................................ )</p>
-                    <p>NIP. ........................................</p>
+                    <p class="sig-name">${currentUser?.principal_name || '( ........................................ )'}</p>
+                    <p>NIP. ${currentUser?.principal_nip || '........................................'}</p>
                 </div>
                 <div class="sig-box">
                     <p>${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
