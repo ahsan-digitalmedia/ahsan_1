@@ -101,5 +101,8 @@ export function updateState(newState) {
     if ('currentUserType' in newState) storage.setItem('guru_user_type', newState.currentUserType || '');
     if ('currentPage' in newState) storage.setItem('guru_current_page', newState.currentPage);
 
+    // Automatically trigger UI re-render on state change
+    window.dispatchEvent(new CustomEvent('app-state-changed'));
+
     return appState;
 }

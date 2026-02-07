@@ -230,4 +230,61 @@ export class SupabaseDataSdk {
 
         return { isOk: true };
     }
+
+    /**
+     * Bulk upsert functionality for complex updates (like Scores)
+     */
+    async batchUpsert(items) {
+        if (!items || items.length === 0) return { isOk: true };
+
+        console.log(`Supabase SDK: Batch upserting ${items.length} records...`);
+
+        const upserts = items.map(item => {
+            const id = item.__backendId || item.id;
+            const type = item.type || 'unknown';
+            const { __backendId: _, id: __, type: ___, ...content } = item;
+
+            const payload = {
+                type,
+                content,
+                updated_at: new Date().toISOString()
+            };
+
+            if (id && !String(id).startsWith('id_')) {
+                payload.id = id;
+            }
+
+            return payload;
+        });
+
+        const { data, error } = await this.client
+            .from(this.tableName)
+            .upsert(upserts)
+            .select();
+
+        if (error) {
+            console.error('Supabase SDK: Batch Upsert Error:', error.message);
+            showToast('Gagal memproses data massal', 'error');
+            throw error;
+        }
+
+        // Update local cache
+        data.forEach(updatedRecord => {
+            const updatedItem = {
+                ...updatedRecord.content,
+                __backendId: updatedRecord.id,
+                type: updatedRecord.type,
+                created_at: updatedRecord.created_at
+            };
+            const index = this.data.findIndex(d => d.__backendId === updatedRecord.id);
+            if (index !== -1) {
+                this.data[index] = updatedItem;
+            } else {
+                this.data.push(updatedItem);
+            }
+        });
+
+        this._notifyListeners();
+        return { isOk: true, data };
+    }
 }

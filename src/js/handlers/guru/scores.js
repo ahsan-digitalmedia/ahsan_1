@@ -26,13 +26,11 @@ export function setupGuruScoresHandlers() {
     if (viewInputBtn) {
         viewInputBtn.onclick = () => {
             updateState({ scoreViewMode: 'input' });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
         };
     }
     if (viewRekapBtn) {
         viewRekapBtn.onclick = () => {
             updateState({ scoreViewMode: 'rekap' });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
         };
     }
 
@@ -40,7 +38,6 @@ export function setupGuruScoresHandlers() {
     if (filterSubjectSelect) {
         filterSubjectSelect.onchange = (e) => {
             updateState({ filterSubject: e.target.value });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
         };
     }
 
@@ -48,7 +45,6 @@ export function setupGuruScoresHandlers() {
     if (classSelect) {
         classSelect.onchange = (e) => {
             updateState({ selectedScoreClass: e.target.value });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
         };
     }
 
@@ -113,7 +109,6 @@ export function setupGuruScoresHandlers() {
             const score = appState.scores.find(s => (s.__backendId || s.id) == id);
             if (score) {
                 updateState({ showModal: true, modalMode: 'edit', editingItem: { ...score } });
-                window.dispatchEvent(new CustomEvent('app-state-changed'));
             }
             return;
         }
@@ -150,7 +145,6 @@ export function setupGuruScoresHandlers() {
         const addBtn = e.target.closest('#add-score-btn');
         if (addBtn) {
             updateState({ showModal: true, modalMode: 'add', editingItem: null });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
             return;
         }
 
@@ -182,7 +176,6 @@ export function setupGuruScoresHandlers() {
                     const tp = parseInt(document.getElementById('config-tp-count').value) || 4;
                     const sum = parseInt(document.getElementById('config-sum-count').value) || 4;
                     updateState({ scoreTPCount: tp, scoreSumatifCount: sum });
-                    window.dispatchEvent(new CustomEvent('app-state-changed'));
                     Toast.fire({ icon: 'success', title: 'Jumlah kolom diperbarui' });
                 }
             });
@@ -263,7 +256,6 @@ export function setupGuruScoresHandlers() {
                     appState._weightsSetManually = true;
                     updateState({ scoreWeights: result.value });
                     // Re-render to update the table calculations instantly
-                    window.dispatchEvent(new CustomEvent('app-state-changed'));
                     Toast.fire({ icon: 'success', title: 'Bobot NA diperbarui' });
                 }
             });
@@ -348,17 +340,8 @@ export function setupGuruScoresHandlers() {
                             }
                         });
 
-                        for (const update of updates) {
-                            const { error } = await window.dataSdk.client.from('app_data').upsert({
-                                id: update.id,
-                                type: update.type || 'score',
-                                content: (({ id, type, __backendId, ...rest }) => rest)(update), // Strip meta
-                                updated_at: new Date().toISOString()
-                            });
-                            if (error) throw error;
-                        }
+                        await window.dataSdk.batchUpsert(updates);
 
-                        window.render();
                         Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Semua perubahan telah disimpan.', timer: 1500 });
                     } catch (err) {
                         console.error('Error batch saving scores:', err);
@@ -448,7 +431,6 @@ export function setupGuruScoresHandlers() {
                     row.style.backgroundColor = '';
                     saveRowBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
                     Toast.fire({ icon: 'success', title: 'Terupdate' });
-                    window.render();
                 } catch (err) {
                     console.error('Error saving row:', err);
                     saveRowBtn.innerHTML = '❌';
@@ -633,7 +615,6 @@ export function setupGuruScoresHandlers() {
                         successCount++;
                     }
                     showToast(`${successCount} data nilai berhasil disimpan`, 'success');
-                    window.dispatchEvent(new CustomEvent('app-state-changed'));
                 } catch (err) {
                     showToast(err.message || 'Gagal mengimpor CSV', 'error');
                 }
@@ -660,7 +641,6 @@ export function setupGuruScoresHandlers() {
         if (modalClassSelect) {
             modalClassSelect.onchange = (e) => {
                 updateState({ selectedModalScoreClass: e.target.value });
-                window.dispatchEvent(new CustomEvent('app-state-changed'));
             };
         }
 

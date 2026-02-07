@@ -48,7 +48,6 @@ export function setupGuruAttendanceHandlers() {
           if (window.dataSdk) await window.dataSdk.create(attendanceData);
           appState.attendances.push(attendanceData);
         }
-        window.dispatchEvent(new CustomEvent('app-state-changed'));
       } catch (err) {
         showToast('Gagal mencatat absensi', 'error');
       }
@@ -137,7 +136,6 @@ export function setupGuruAttendanceHandlers() {
       } finally {
         markAllBtn.disabled = false;
         markAllBtn.innerHTML = originalText;
-        window.dispatchEvent(new CustomEvent('app-state-changed'));
       }
       return;
     }
@@ -160,7 +158,6 @@ export function setupGuruAttendanceHandlers() {
   if (dateInput) {
     dateInput.onchange = (e) => {
       updateState({ selectedDate: e.target.value });
-      window.dispatchEvent(new CustomEvent('app-state-changed'));
     };
   }
 
@@ -169,7 +166,6 @@ export function setupGuruAttendanceHandlers() {
   if (classSelect) {
     classSelect.onchange = (e) => {
       updateState({ selectedAttendanceClass: e.target.value });
-      window.dispatchEvent(new CustomEvent('app-state-changed'));
     };
   }
 }

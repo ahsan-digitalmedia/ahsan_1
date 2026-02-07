@@ -7,7 +7,6 @@ export function setupMainAppHandlers() {
     if (toggleBtn) {
         toggleBtn.onclick = () => {
             updateState({ sidebarOpen: !appState.sidebarOpen });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
         };
     }
 
@@ -19,7 +18,6 @@ export function setupMainAppHandlers() {
                 currentUserType: null,
                 currentPage: 'login'
             });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
         };
     }
 
@@ -33,7 +31,6 @@ export function setupMainAppHandlers() {
                 sidebarOpen: isMobile ? false : appState.sidebarOpen,
                 showModal: false
             });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
         };
     });
 }

@@ -26,7 +26,6 @@ export function setupModulAjarHandlers() {
           modul_dimensions: []
         }
       });
-      window.dispatchEvent(new CustomEvent('app-state-changed'));
       return;
     }
 
@@ -42,7 +41,6 @@ export function setupModulAjarHandlers() {
           currentModulStep: 1,
           editingItem: { ...item }
         });
-        window.dispatchEvent(new CustomEvent('app-state-changed'));
       }
       return;
     }
@@ -56,7 +54,6 @@ export function setupModulAjarHandlers() {
         try {
           if (window.dataSdk) await window.dataSdk.delete(item);
           showToast('Modul berhasil dihapus', 'success');
-          window.dispatchEvent(new CustomEvent('app-state-changed'));
         } catch (err) {
           showToast('Gagal menghapus modul', 'error');
         }
@@ -116,7 +113,6 @@ export function setupModulAjarHandlers() {
   if (filterSelect) {
     filterSelect.onchange = (e) => {
       updateState({ filterSubject: e.target.value });
-      window.dispatchEvent(new CustomEvent('app-state-changed'));
     };
   }
 

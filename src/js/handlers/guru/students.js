@@ -22,7 +22,6 @@ export function setupGuruStudentsHandlers() {
 
             if (student) {
                 updateState({ showModal: true, modalMode: 'edit', editingItem: { ...student } });
-                window.dispatchEvent(new CustomEvent('app-state-changed'));
             }
             return;
         }
@@ -39,7 +38,6 @@ export function setupGuruStudentsHandlers() {
                 try {
                     if (window.dataSdk) await window.dataSdk.delete(student);
                     showToast('Siswa berhasil dihapus');
-                    window.dispatchEvent(new CustomEvent('app-state-changed'));
                 } catch (err) {
                     showToast('Gagal menghapus siswa', 'error');
                 }
@@ -51,7 +49,6 @@ export function setupGuruStudentsHandlers() {
         const addBtn = e.target.closest('#add-student-btn');
         if (addBtn) {
             updateState({ showModal: true, modalMode: 'add', editingItem: null });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
             return;
         }
 

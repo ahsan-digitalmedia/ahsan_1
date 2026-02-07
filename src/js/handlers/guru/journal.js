@@ -17,7 +17,6 @@ export function setupGuruJournalHandlers() {
             const item = appState.journals.find(j => (j.__backendId || j.id) == id);
             if (item) {
                 updateState({ showModal: true, modalMode: 'edit', editingItem: { ...item } });
-                window.dispatchEvent(new CustomEvent('app-state-changed'));
             }
             return;
         }
@@ -31,7 +30,6 @@ export function setupGuruJournalHandlers() {
                 try {
                     if (window.dataSdk) await window.dataSdk.delete(item);
                     showToast('Jurnal berhasil dihapus', 'success');
-                    window.dispatchEvent(new CustomEvent('app-state-changed'));
                 } catch (err) {
                     showToast('Gagal menghapus jurnal', 'error');
                 }
@@ -43,7 +41,6 @@ export function setupGuruJournalHandlers() {
         const addBtn = e.target.closest('#add-journal-btn') || e.target.closest('#add-journal-first-btn');
         if (addBtn) {
             updateState({ showModal: true, modalMode: 'add', editingItem: null });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
             return;
         }
 
@@ -59,8 +56,7 @@ export function setupGuruJournalHandlers() {
     const classFilterSelect = document.getElementById('journal-class-filter');
     if (classFilterSelect) {
         classFilterSelect.onchange = (e) => {
-            updateState({ selectedJournalClass: e.target.value });
-            window.dispatchEvent(new CustomEvent('app-state-changed'));
+            updateState({ filterJournalClass: e.target.value });
         };
     }
 
