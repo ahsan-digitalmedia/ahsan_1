@@ -103,14 +103,15 @@ async function initApp() {
                 console.log('Restoring existing session for:', session.user.email);
 
                 // Find matching teacher/admin profile
-                const email = session.user.email;
-                const isAdmin = email === (appState.config?.admin_email || 'admin@sekolah.id');
-                const teacher = appState.teachers.find(t => t.email === email);
+                const email = (session.user.email || '').toLowerCase().trim();
+                const configAdminEmail = (appState.config?.admin_email || 'admin@sekolah.id').toLowerCase().trim();
+                const isAdmin = email === configAdminEmail;
+                const teacher = appState.teachers.find(t => (t.email || '').toLowerCase().trim() === email);
 
                 if (isAdmin || teacher) {
                     updateState({
                         isLoggedIn: true,
-                        currentUser: isAdmin ? { name: 'Administrator', email, role: 'admin' } : { ...teacher },
+                        currentUser: isAdmin ? { name: 'Administrator', email: session.user.email, role: 'admin' } : { ...teacher },
                         currentUserType: isAdmin ? 'admin' : 'guru',
                         currentPage: isAdmin ? 'dashboard' : 'guru-dashboard'
                     });

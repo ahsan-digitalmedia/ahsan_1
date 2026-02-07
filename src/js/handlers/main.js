@@ -11,7 +11,14 @@ export function setupMainAppHandlers() {
     }
 
     if (logoutBtn) {
-        logoutBtn.onclick = () => {
+        logoutBtn.onclick = async () => {
+            if (window.dataSdk) {
+                try {
+                    await window.dataSdk.signOut();
+                } catch (err) {
+                    console.error('Logout error:', err);
+                }
+            }
             updateState({
                 isLoggedIn: false,
                 currentUser: null,
