@@ -51,7 +51,16 @@ export class SupabaseDataSdk {
             // 2. Notify initial data
             this._notifyListeners();
 
-            // 3. Setup Realtime Subscription
+            // 3. Setup Auth State Listener and Initial Session
+            this.client.auth.onAuthStateChange((event, session) => {
+                console.log(`Supabase SDK Auth Event: ${event}`);
+                if (session?.user) {
+                    // Sync backend user to app state if needed
+                    console.log('Supabase SDK: User authenticated:', session.user.email);
+                }
+            });
+
+            // 4. Setup Realtime Subscription
             this.client
                 .channel('schema-db-changes')
                 .on(
@@ -116,12 +125,18 @@ export class SupabaseDataSdk {
 
         console.log(`Supabase SDK: Attempting to CREATE record of type "${type}"...`);
 
+        const session = await this.getSession();
+        const payload = {
+            type: type,
+            content: content
+        };
+        if (session?.user) {
+            payload.auth_id = session.user.id;
+        }
+
         const { data, error } = await this.client
             .from(this.tableName)
-            .insert([{
-                type: type,
-                content: content
-            }])
+            .insert([payload])
             .select();
 
         if (error) {
@@ -151,9 +166,15 @@ export class SupabaseDataSdk {
 
         console.log(`Supabase SDK: Attempting to UPDATE record "${id}" (type: "${type}")...`);
 
+        const session = await this.getSession();
+        const payload = { content: content, updated_at: new Date().toISOString() };
+        if (session?.user) {
+            payload.auth_id = session.user.id;
+        }
+
         const { data, error } = await this.client
             .from(this.tableName)
-            .update({ content: content, updated_at: new Date().toISOString() })
+            .update(payload)
             .eq('id', id)
             .select();
 
@@ -239,6 +260,7 @@ export class SupabaseDataSdk {
 
         console.log(`Supabase SDK: Batch upserting ${items.length} records...`);
 
+        const session = await this.getSession();
         const upserts = items.map(item => {
             const id = item.__backendId || item.id;
             const type = item.type || 'unknown';
@@ -249,6 +271,10 @@ export class SupabaseDataSdk {
                 content,
                 updated_at: new Date().toISOString()
             };
+
+            if (session?.user) {
+                payload.auth_id = session.user.id;
+            }
 
             if (id && !String(id).startsWith('id_')) {
                 payload.id = id;
@@ -286,5 +312,50 @@ export class SupabaseDataSdk {
 
         this._notifyListeners();
         return { isOk: true, data };
+    }
+
+    // --- Authentication Methods ---
+
+    /**
+     * Official Supabase Sign Up
+     */
+    async signUp(email, password, metadata = {}) {
+        const { data, error } = await this.client.auth.signUp({
+            email,
+            password,
+            options: { data: metadata }
+        });
+        if (error) throw error;
+        return data;
+    }
+
+    /**
+     * Official Supabase Sign In
+     */
+    async signIn(email, password) {
+        const { data, error } = await this.client.auth.signInWithPassword({
+            email,
+            password
+        });
+        if (error) throw error;
+        return data;
+    }
+
+    /**
+     * Official Supabase Sign Out
+     */
+    async signOut() {
+        const { error } = await this.client.auth.signOut();
+        if (error) throw error;
+        return { isOk: true };
+    }
+
+    /**
+     * Get Current Active Session
+     */
+    async getSession() {
+        const { data: { session }, error } = await this.client.auth.getSession();
+        if (error) throw error;
+        return session;
     }
 }

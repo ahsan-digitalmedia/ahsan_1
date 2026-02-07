@@ -92,19 +92,37 @@ async function initApp() {
         console.error('Core data initialization failed.');
         if (initResult.status === 401) {
             console.warn('Authentication error detected. Please refresh the page to try again with a clean session.');
-            // We don't render yet if data is critical, but for now we proceed to at least show the login
         }
     } else {
         await handleMigration(supabaseSdk);
+
+        // RESTORE SESSION: Check for official Supabase session on load
+        try {
+            const session = await window.dataSdk.getSession();
+            if (session?.user) {
+                console.log('Restoring existing session for:', session.user.email);
+
+                // Find matching teacher/admin profile
+                const email = session.user.email;
+                const isAdmin = email === (appState.config?.admin_email || 'admin@sekolah.id');
+                const teacher = appState.teachers.find(t => t.email === email);
+
+                if (isAdmin || teacher) {
+                    updateState({
+                        isLoggedIn: true,
+                        currentUser: isAdmin ? { name: 'Administrator', email, role: 'admin' } : { ...teacher },
+                        currentUserType: isAdmin ? 'admin' : 'guru',
+                        currentPage: isAdmin ? 'dashboard' : 'guru-dashboard'
+                    });
+                }
+            }
+        } catch (sessionErr) {
+            console.error('Failed to restore session:', sessionErr);
+        }
     }
 
     // Force sidebar to be closed at start (Universal Drawer)
     updateState({ sidebarOpen: false });
-
-    // Handle resize - no auto logic needed anymore for universal drawer, 
-    // but we can keep a listener to close it if window gets huge just in case, 
-    // or simply remove the complex logic. 
-    // For now, let's keep it clean: no auto-opening/closing on resize.
 
     render();
 }
