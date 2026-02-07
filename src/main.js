@@ -41,22 +41,28 @@ async function initApp() {
     const dataHandler = {
         onDataChanged(data) {
             const isGuru = appState.currentUserType === 'guru' && appState.isLoggedIn;
-            const teacherId = appState.currentUser?.__backendId || appState.currentUser?.id;
+            const currentUser = appState.currentUser || {};
+            const teacherId = (currentUser.__backendId || currentUser.id || '').toLowerCase().trim();
 
             const filterFn = (items, type) => {
                 const filteredByType = items.filter(d => d.type === type);
                 if (!isGuru) return filteredByType;
 
                 // For teachers, strictly filter by teacher_id.
-                // Each teacher only sees data they created/uploaded.
-                return filteredByType.filter(d => d.teacher_id === teacherId);
+                // Case-insensitive match for robust data recovery.
+                return filteredByType.filter(d => {
+                    const tid = (d.teacher_id || d.id || '').toLowerCase().trim();
+                    return tid === teacherId;
+                });
             };
 
             const configRecord = data.find(d => d.type === 'config');
             const newConfig = configRecord ? Object.assign({}, defaultConfig, configRecord) : Object.assign({}, defaultConfig);
 
             const teachersData = data.filter(d => d.type === 'teacher');
-            const filteredTeachers = isGuru ? teachersData.filter(d => d.id === teacherId || d.__backendId === teacherId) : teachersData;
+            const filteredTeachers = isGuru ?
+                teachersData.filter(d => (d.id || '').toLowerCase().trim() === teacherId || (d.__backendId || '').toLowerCase().trim() === teacherId) :
+                teachersData;
 
             // Sync currentUser if logged in as guru to ensure we have latest fields (like created_at/joinDate)
             let updatedCurrentUser = appState.currentUser;
@@ -106,7 +112,7 @@ async function initApp() {
                 const email = (session.user.email || '').toLowerCase().trim();
                 const configAdminEmail = (appState.config?.admin_email || 'admin@sekolah.id').toLowerCase().trim();
                 const isAdmin = email === configAdminEmail;
-                const teacher = appState.teachers.find(t => (t.email || '').toLowerCase().trim() === email);
+                let teacher = appState.teachers.find(t => (t.email || '').toLowerCase().trim() === email);
 
                 if (isAdmin || teacher) {
                     updateState({

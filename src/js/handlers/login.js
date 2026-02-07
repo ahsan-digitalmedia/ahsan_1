@@ -196,12 +196,13 @@ export function setupLoginHandlers() {
                     if (window.dataSdk) {
                         try {
                             const authData = await window.dataSdk.signIn(email, password);
+                            // Find teacher by email case-insensitively
                             teacher = appState.teachers.find(t => (t.email || '').toLowerCase().trim() === email);
                         } catch (signInErr) {
                             // 2. If fails, check if migration is needed
                             teacher = appState.teachers.find(t =>
                                 (t.email || '').toLowerCase().trim() === email &&
-                                String(t.password) === String(password)
+                                String(t.password).trim() === String(password).trim()
                             );
 
                             if (teacher) {
