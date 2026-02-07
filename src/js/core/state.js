@@ -64,6 +64,8 @@ export const appState = {
     scoreViewMode: 'input', // 'input' or 'rekap'
     selectedAttendanceClass: '',
     selectedScoreClass: '',
+    selectedStudentClass: '',
+    studentSearchQuery: '',
     scoreWeights: { fs: 80, pts: 10, pas: 10 },
     scoreTPCount: 4,
     scoreSumatifCount: 4,

@@ -79,10 +79,37 @@ export function setupGuruStudentsHandlers() {
             downloadCSV(headers, sampleData, 'Template_Siswa.csv');
             return;
         }
+
+        // Clear Search Button
+        const clearSearchBtn = e.target.closest('#clear-student-search');
+        if (clearSearchBtn) {
+            updateState({ studentSearchQuery: '' });
+            return;
+        }
     };
 
     contentArea.addEventListener('click', handler);
     contentArea._studentsHandler = handler;
+
+    // Search Input with Debounce
+    const searchInput = document.getElementById('student-search');
+    if (searchInput) {
+        let debounceTimer;
+        searchInput.oninput = (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                updateState({ studentSearchQuery: e.target.value });
+            }, 300);
+        };
+    }
+
+    // Class Filter
+    const classFilter = document.getElementById('student-filter-class');
+    if (classFilter) {
+        classFilter.onchange = (e) => {
+            updateState({ selectedStudentClass: e.target.value });
+        };
+    }
 
     // CSV File Change Handler
     const csvInput = document.getElementById('import-csv-input');

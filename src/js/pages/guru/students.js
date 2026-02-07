@@ -2,12 +2,13 @@ import { appState } from '../../core/state.js';
 import { formatDate } from '../../core/utils.js';
 
 export function renderGuruStudentsPage() {
-  const { students, currentUser } = appState;
+  const { students, currentUser, selectedStudentClass, studentSearchQuery } = appState;
   const teacherId = currentUser?.__backendId || currentUser?.id;
   const managedClasses = (currentUser?.class || '').split(',').map(c => c.trim()).filter(c => c);
-  const isFlexibleMatch = (itemClass) => {
+
+  const isFlexibleMatch = (itemClass, targetClasses) => {
     if (!itemClass) return false;
-    return managedClasses.some(mc => {
+    return targetClasses.some(mc => {
       const ic = String(itemClass).trim();
       const target = String(mc).trim();
       if (ic === target) return true;
@@ -15,12 +16,34 @@ export function renderGuruStudentsPage() {
     });
   };
 
-  const classStudents = students.filter(s => (s.type === 'student' || !s.type) && (String(s.teacher_id) === String(teacherId) || isFlexibleMatch(s.student_class)));
+  // 1. Initial filter by teacher or managed classes
+  let filtered = students.filter(s =>
+    (s.type === 'student' || !s.type) &&
+    (String(s.teacher_id) === String(teacherId) || isFlexibleMatch(s.student_class, managedClasses))
+  );
+
+  // 2. Filter by specific class if selected
+  if (selectedStudentClass) {
+    filtered = filtered.filter(s => s.student_class === selectedStudentClass);
+  }
+
+  // 3. Filter by search query
+  if (studentSearchQuery) {
+    const q = studentSearchQuery.toLowerCase().trim();
+    filtered = filtered.filter(s =>
+      (s.student_name || '').toLowerCase().includes(q) ||
+      (s.student_nisn || '').toLowerCase().includes(q) ||
+      (s.student_nis || '').toLowerCase().includes(q)
+    );
+  }
+
+  const classStudents = filtered;
 
   return `
     <div class="animate-fadeIn">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
+          <h2 class="text-2xl font-bold text-slate-800">Daftar Siswa</h2>
           <p class="text-slate-500">Kelola data siswa yang Anda ampu</p>
         </div>
         <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -43,6 +66,34 @@ export function renderGuruStudentsPage() {
             </svg>
             Tambah Siswa
           </button>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="md:col-span-2 relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <input type="text" id="student-search" value="${studentSearchQuery}" placeholder="Cari nama, NISN, atau NIS..." 
+            class="input-modern block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl text-sm transition-all focus:ring-4 focus:ring-blue-100 focus:border-blue-400">
+          ${studentSearchQuery ? `
+            <button id="clear-student-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          ` : ''}
+        </div>
+        <div>
+          <select id="student-filter-class" class="input-modern w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:ring-4 focus:ring-blue-100">
+            <option value="">Semua Kelas</option>
+            ${managedClasses.map(c => `
+              <option value="${c}" ${selectedStudentClass === c ? 'selected' : ''}>Kelas ${c}</option>
+            `).join('')}
+          </select>
         </div>
       </div>
       
