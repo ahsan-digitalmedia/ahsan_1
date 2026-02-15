@@ -133,6 +133,7 @@ export default function TeacherModal() {
                                 <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} required className="input-modern cursor-pointer">
                                     <option value="active">AKTIF</option>
                                     <option value="inactive">NON-AKTIF</option>
+                                    <option value="pending">MENUNGGU AKTIVASI</option>
                                 </select>
                             </FormGroup>
                         </div>

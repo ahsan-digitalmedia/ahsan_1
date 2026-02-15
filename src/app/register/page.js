@@ -82,6 +82,7 @@ export default function RegisterPage() {
                     npsn: formData.npsn,
                     phone: formData.phone,
                     status: 'pending', // Requires admin activation
+                    password: formData.password, // Stored as requested (Warning: Insecure)
                     auth_id: authData.user.id
                 };
 

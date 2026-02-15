@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
+import { supabaseData } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 export default function TeachersPage() {
@@ -27,7 +28,27 @@ export default function TeachersPage() {
     const stats = {
         total: teachers.length,
         active: teachers.filter(t => t.status === 'active').length,
-        inactive: teachers.filter(t => t.status === 'inactive').length
+        inactive: teachers.filter(t => t.status === 'inactive').length,
+        pending: teachers.filter(t => t.status === 'pending').length
+    };
+
+    const handleToggleStatus = async (teacher) => {
+        const isActive = teacher.status === 'active';
+        const newStatus = isActive ? 'inactive' : 'active';
+        const actionName = isActive ? 'non-aktifkan' : 'aktifkan';
+
+        if (!confirm(`Apakah Anda yakin ingin ${actionName} akses guru "${teacher.name}"?`)) return;
+
+        try {
+            await supabaseData.update(teacher.__backendId, {
+                ...teacher,
+                status: newStatus
+            });
+            // State update is handled by subscription/context refresh
+        } catch (error) {
+            console.error(`Error changing status to ${newStatus}:`, error);
+            alert(`Gagal ${actionName} guru.`);
+        }
     };
 
     return (
@@ -50,8 +71,9 @@ export default function TeachersPage() {
             </div>
 
             {/* Stats Mini Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
                 <StatCard label="Total Guru" value={stats.total} color="indigo" gradient="gradient-blue" />
+                <StatCard label="Perlu Aktivasi" value={stats.pending} color="orange" gradient="gradient-orange" />
                 <StatCard label="Aktif" value={stats.active} color="emerald" gradient="gradient-teal" />
                 <StatCard label="Non-aktif" value={stats.inactive} color="rose" gradient="gradient-rose" />
             </div>
@@ -77,6 +99,7 @@ export default function TeachersPage() {
                         className="w-full md:w-48 px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold uppercase text-slate-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 outline-none appearance-none tracking-widest cursor-pointer hover:border-indigo-100 transition-all"
                     >
                         <option value="all">⚡ Filter Status</option>
+                        <option value="pending">⏳ Perlu Aktivasi</option>
                         <option value="active">🟢 AKTIF</option>
                         <option value="inactive">🔴 NON-AKTIF</option>
                     </select>
@@ -124,13 +147,32 @@ export default function TeachersPage() {
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight",
-                                            teacher.status === 'active' ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"
+                                            teacher.status === 'active' ? "bg-emerald-100 text-emerald-600" :
+                                                teacher.status === 'pending' ? "bg-orange-100 text-orange-600" : "bg-rose-100 text-rose-600"
                                         )}>
-                                            {teacher.status === 'active' ? 'Aktif' : 'Off'}
+                                            {teacher.status === 'active' ? 'Aktif' : teacher.status === 'pending' ? 'Perlu Aktivasi' : 'Off'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => handleToggleStatus(teacher)}
+                                                className={cn(
+                                                    "p-2 rounded-lg transition-all shadow-sm active:scale-95",
+                                                    teacher.status === 'active'
+                                                        ? "text-rose-500 hover:bg-rose-50"
+                                                        : "text-emerald-500 hover:bg-emerald-50"
+                                                )}
+                                                title={teacher.status === 'active' ? "Non-aktifkan Akun" : "Aktifkan Akun"}
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    {teacher.status === 'active' ? (
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                                    ) : (
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path>
+                                                    )}
+                                                </svg>
+                                            </button>
                                             <button
                                                 onClick={() => updateState({ showModal: true, modalType: 'teacher', modalMode: 'edit', editingItem: teacher })}
                                                 className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
