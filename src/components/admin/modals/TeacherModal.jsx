@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { supabaseData } from "@/lib/supabase";
-import { cn, SUBJECT_LIST, normalizeSubject, normalizeSubjectList, splitSubjects, joinSubjects } from "@/lib/utils";
+import { cn, SUBJECT_LIST, normalizeSubject, splitSubjects, joinSubjects } from "@/lib/utils";
 
 export default function TeacherModal() {
     const { state, updateState } = useApp();
@@ -19,6 +19,7 @@ export default function TeacherModal() {
         subject: "",
         password: "",
         status: "active",
+        class: "" // Added class field to state
     });
 
     const [classRows, setClassRows] = useState([{ level: "1", suffix: "" }]);
@@ -38,8 +39,10 @@ export default function TeacherModal() {
                 subject: initialSubject.includes(',') ? joinSubjects(splitSubjects(initialSubject)) : initialSubject,
                 password: editingItem.password || "",
                 status: editingItem.status || "active",
+                class: editingItem.class || ""
             });
 
+            // Parse existing classes
             const managedClasses = (editingItem.class || "").split(",").map(c => c.trim()).filter(c => c);
             if (managedClasses.length > 0) {
                 setClassRows(managedClasses.map(c => {
@@ -104,13 +107,15 @@ export default function TeacherModal() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => updateState({ showModal: false, editingItem: null })}></div>
             <div className="bg-white rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] w-full max-w-lg relative z-10 overflow-hidden animate-zoomIn flex flex-col max-h-[92vh] border border-slate-100">
+
+                {/* Header */}
                 <div className="gradient-blue p-8 text-white shrink-0 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
                     <h3 className="text-xl font-black tracking-tight relative z-10">{modalMode === "edit" ? "Edit Profil Guru" : "Tambah Guru Baru"}</h3>
                     <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest mt-1 opacity-80 relative z-10">Lengkapi informasi profil dan akses sistem</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-7 overflow-y-auto custom-scrollbar">
+                <form onSubmit={handleSubmit} className="p-8 space-y-7 overflow-y-auto custom-scrollbar flex-1">
                     <div className="space-y-5">
                         <FormGroup label="Nama Lengkap *" required>
                             <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="input-modern" placeholder="Cth: Dr. Ahmad Subarjo, M.Pd" />
@@ -138,6 +143,7 @@ export default function TeacherModal() {
                             </FormGroup>
                         </div>
 
+                        {/* Class Management Section */}
                         <div className="p-5 bg-slate-50/50 rounded-[1.5rem] border border-slate-100 space-y-5">
                             <div className="flex items-center justify-between">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Kelas yang Diampu *</label>
@@ -249,7 +255,7 @@ export default function TeacherModal() {
                         </div>
                     </div>
 
-                    <div className="flex gap-4 p-8 pt-0 shrink-0">
+                    <div className="flex gap-4 pt-4 border-t border-slate-100 mt-auto">
                         <button
                             type="button"
                             onClick={() => updateState({ showModal: false, editingItem: null })}
@@ -265,14 +271,13 @@ export default function TeacherModal() {
                             {isSubmitting ? (
                                 <div className="flex items-center justify-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    MENYIMPAN...
+                                    Menyimpan...
                                 </div>
-                            ) : (modalMode === 'edit' ? "SIMPAN PERUBAHAN" : "TAMBAH GURU")}
+                            ) : (modalMode === 'edit' ? "Simpan Perubahan" : "Tambah Guru")}
                         </button>
                     </div>
                 </form>
             </div>
-
         </div>
     );
 }

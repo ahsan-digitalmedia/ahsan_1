@@ -225,112 +225,6 @@ body {
   }
 }
 
-@media print {
-  @page {
-    size: portrait;
-    margin: 20mm;
-  }
-
-  body {
-    background: white !important;
-    font-family: 'Inter', system-ui, sans-serif !important;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  .print-only {
-    display: block !important;
-  }
-
-  .print-container {
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    color: black !important;
-  }
-
-  .print-header {
-    border-bottom: 2px solid #1e293b;
-    padding-bottom: 15px;
-    margin-bottom: 30px;
-  }
-
-  .print-section {
-    margin-bottom: 25px;
-    page-break-inside: avoid;
-  }
-
-  .print-section-title {
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-size: 14px;
-    border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-    color: #1e293b;
-  }
-
-  .print-grid {
-    display: grid;
-    grid-template-columns: 200px 1fr;
-    gap: 10px;
-    margin-bottom: 8px;
-    font-size: 13px;
-  }
-
-  .print-label {
-    font-weight: 600;
-    color: #475569;
-  }
-
-  .print-value {
-    color: #000;
-  }
-
-  .signature-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 50px;
-    margin-top: 60px;
-    page-break-inside: avoid;
-  }
-
-  .signature-box {
-    text-align: center;
-  }
-
-  .signature-space {
-    height: 80px;
-  }
-}
-
-.print-only {
-  display: none;
-}
-
-@keyframes pulse-soft {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.7;
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.5s ease forwards;
-}
-
-.animate-slideIn {
-  animation: slideIn 0.4s ease forwards;
-}
-
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -506,4 +400,86 @@ body {
 
 .score-poor {
   background: var(--gradient-rose);
+}
+
+@media print {
+  @page {
+    size: portrait;
+    margin: 20mm;
+  }
+
+  body {
+    background: white !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    color: black !important;
+  }
+
+  .print-header {
+    border-bottom: 2px solid #1e293b;
+    padding-bottom: 15px;
+    margin-bottom: 30px;
+  }
+
+  .print-section {
+    margin-bottom: 25px;
+    page-break-inside: avoid;
+  }
+
+  .print-section-title {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 14px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    color: #1e293b;
+  }
+
+  .print-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .print-label {
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .print-value {
+    color: #000;
+  }
+
+  .signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    margin-top: 60px;
+    page-break-inside: avoid;
+  }
+
+  .signature-box {
+    text-align: center;
+  }
+
+  .signature-space {
+    height: 80px;
+  }
 }

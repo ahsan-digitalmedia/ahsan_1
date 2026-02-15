@@ -37,11 +37,19 @@ export function AppProvider({ children }) {
         scoreWeights: { fs: 80, pts: 10, pas: 10 },
     });
 
+    const isProcessing = React.useRef(false);
+
     const updateState = (updates) => {
         setState((prev) => ({ ...prev, ...updates }));
     };
 
-    const processData = useCallback(async () => {
+    const processData = useCallback(async (triggeredBy = 'initial') => {
+        if (isProcessing.current) {
+            console.log(`AppContext: processData already in progress (triggered by ${triggeredBy}), skipping.`);
+            return;
+        }
+        isProcessing.current = true;
+        console.log(`AppContext: Starting processData (triggered by ${triggeredBy})`);
         try {
             // 1. Fetch Global Config First (Available to everyone)
             const { data: configRecord, error: configError } = await supabase
@@ -205,14 +213,9 @@ export function AppProvider({ children }) {
                     config: globalConfig // Still update config even if logged out
                 });
             }
-        } catch (error) {
-            console.error("Critical data processing error:", error);
-            const { data: { user } } = await supabase.auth.getUser();
-            updateState({
-                currentUser: user ? { name: "Guru", email: user.email, role: "teacher" } : null,
-                isLoggedIn: !!user,
-                isLoading: false
-            });
+        } finally {
+            isProcessing.current = false;
+            console.log(`AppContext: processData completed.`);
         }
     }, []);
 
@@ -252,9 +255,9 @@ export function AppProvider({ children }) {
                     table: 'app_data',
                 },
                 (payload) => {
+                    console.log("AppContext: Real-time change detected:", payload.eventType, payload.table);
                     // Simple approach: re-fetch on any change
-                    // Optimization: Apply payload directly to state
-                    processData();
+                    processData('realtime');
                 }
             )
             .subscribe();
