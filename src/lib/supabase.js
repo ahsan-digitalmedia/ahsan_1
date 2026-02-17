@@ -24,13 +24,17 @@ export const supabaseData = {
 
         if (error) throw error;
 
-        return data.map(d => ({
-            ...d.content,
-            __backendId: d.id,
-            type: d.type,
-            created_at: d.created_at,
-            auth_id: d.auth_id
-        }));
+        return data.map(d => {
+            const content = d.content || {};
+            return {
+                ...content,
+                __backendId: d.id,
+                type: d.type,
+                created_at: d.created_at,
+                // Prioritize top-level column, fallback to content, but ensure it's not nullified if content has it
+                auth_id: d.auth_id || content.auth_id || null
+            };
+        });
     },
 
     async create(record, tableName = 'app_data') {
@@ -90,6 +94,17 @@ export const supabaseData = {
         } else {
             return await this.create({ ...newConfig, type: 'config' });
         }
+    },
+
+    async fetchRecentAuditLogs(limit = 15) {
+        const { data, error } = await supabase
+            .from('audit_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (error) throw error;
+        return data;
     }
 };
 

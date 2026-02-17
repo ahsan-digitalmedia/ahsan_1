@@ -58,8 +58,8 @@ export default function RegisterPage() {
                 .filter('content->>email', 'eq', formData.email.toLowerCase())
                 .maybeSingle();
 
-            if (existingProfile) {
-                setError("Email ini sudah terdaftar sebagai Guru. Silakan masuk atau hubungi Admin.");
+            if (existingProfile && existingProfile.content?.auth_id) {
+                setError("Email ini sudah terdaftar sebagai Guru dan memiliki akun. Silakan masuk atau hubungi Admin.");
                 setLoading(false);
                 return;
             }

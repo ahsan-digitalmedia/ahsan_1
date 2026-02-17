@@ -2,11 +2,12 @@
 
 import React, { useState, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
-import { supabaseData } from "@/lib/supabase";
+import { createClient } from '@supabase/supabase-js';
+import { supabase, supabaseData } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 export default function TeachersPage() {
-    const { state, updateState } = useApp();
+    const { state, updateState, processData } = useApp();
     const { teachers } = state;
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -51,6 +52,72 @@ export default function TeachersPage() {
         }
     };
 
+    const handleSyncAuth = async (teacher) => {
+        const cleanEmail = String(teacher.email || "").trim().toLowerCase();
+        if (!cleanEmail || !teacher.password) {
+            alert("Email atau password guru tidak ditemukan. Pastikan data profil lengkap.");
+            return;
+        }
+
+        if (!confirm(`Apakah Anda ingin mengaktifkan akses Login untuk "${teacher.name}"?\nEmail: ${cleanEmail}`)) return;
+
+        try {
+            updateState({ loading: true });
+
+            // 0. Use a temporary client to avoid kicking out the Admin session
+            const tempSupabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                {
+                    auth: {
+                        persistSession: false,
+                        autoRefreshToken: false,
+                        detectSessionInUrl: false
+                    }
+                }
+            );
+
+            // 1. Sign Up the teacher to Supabase Auth using the temp client
+            const { data, error: authError } = await tempSupabase.auth.signUp({
+                email: cleanEmail,
+                password: teacher.password,
+            });
+
+            if (authError) {
+                // If user already exists, we can't get their ID directly as Admin
+                // but we can tell the admin to ask them to login (which will auto-sync)
+                if (authError.message?.includes("already registered")) {
+                    alert(`Email ${cleanEmail} sudah memiliki akun di sistem.\n\nSaran: Minta Guru ini untuk mencoba LOGIN. Sistem akan otomatis menghubungkan akunnya saat login pertama kali.`);
+                    return;
+                }
+                throw authError;
+            }
+
+            if (data.user) {
+                // 2. Update the profile with the new auth_id (Both in JSON and Top-level column)
+                const { error: dbError } = await supabase
+                    .from('app_data')
+                    .update({
+                        content: { ...teacher, auth_id: data.user.id, email: cleanEmail },
+                        auth_id: data.user.id,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', teacher.__backendId);
+
+                if (dbError) throw dbError;
+
+                await processData('sync_success'); // Force refresh context state
+
+                alert(`Berhasil membuat akun autentikasi untuk ${teacher.name}. Status akan segera diperbarui.`);
+            }
+        } catch (error) {
+            console.error("Error syncing auth:", error);
+            alert(`Gagal mensinkronisasi akun: ${error.message}`);
+        } finally {
+            updateState({ loading: false });
+        }
+    };
+
     return (
         <div className="animate-fadeIn">
             {/* Header Section */}
@@ -59,15 +126,25 @@ export default function TeachersPage() {
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Manajemen Guru</h1>
                     <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mt-1">Kelola data tenaga pendidik dan akses sistem.</p>
                 </div>
-                <button
-                    onClick={() => updateState({ showModal: true, modalType: 'teacher', modalMode: 'add', editingItem: null })}
-                    className="bg-indigo-600 text-white px-8 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-md active:scale-95"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Tambah Guru Baru
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => processData('manual_refresh')}
+                        className="bg-white text-slate-600 px-5 py-3.5 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-50 transition-all flex items-center gap-2"
+                        title="Segarkan Data"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Refresh
+                    </button>
+                    <button
+                        onClick={() => updateState({ showModal: true, modalType: 'teacher', modalMode: 'add', editingItem: null })}
+                        className="bg-indigo-600 text-white px-8 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-md active:scale-95"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Tambah Guru Baru
+                    </button>
+                </div>
             </div>
 
             {/* Stats Mini Grid */}
@@ -115,6 +192,7 @@ export default function TeachersPage() {
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Informasi Guru</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden lg:table-cell">Kontak & NIP</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden md:table-cell">Kelas & Mapel</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Auth</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Aksi</th>
                             </tr>
@@ -146,6 +224,19 @@ export default function TeachersPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-center">
+                                        {teacher.auth_id ? (
+                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 uppercase tracking-tight">
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M2.166 4.9L10 9.154l7.834-4.254A1 1 0 0017 3H3a1 1 0 00-.834 1.9zM18 6.634V14a2 2 0 01-2 2H4a2 2 0 01-2-2V6.634l8 4.34 8-4.34z" clipRule="evenodd"></path></svg>
+                                                Connected
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100 uppercase tracking-tight">
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
+                                                No Auth
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
                                         <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight",
                                             teacher.status === 'active' ? "bg-emerald-100 text-emerald-600" :
                                                 teacher.status === 'pending' ? "bg-orange-100 text-orange-600" : "bg-rose-100 text-rose-600"
@@ -173,6 +264,17 @@ export default function TeachersPage() {
                                                     )}
                                                 </svg>
                                             </button>
+                                            {!teacher.auth_id && (
+                                                <button
+                                                    onClick={() => handleSyncAuth(teacher)}
+                                                    className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all shadow-sm active:scale-95"
+                                                    title="Hubungkan ke Autentikasi"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                                                    </svg>
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => updateState({ showModal: true, modalType: 'teacher', modalMode: 'edit', editingItem: teacher })}
                                                 className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"

@@ -37,7 +37,7 @@ export default function TeacherModal() {
                 email: editingItem.email || "",
                 phone: editingItem.phone || "",
                 subject: initialSubject.includes(',') ? joinSubjects(splitSubjects(initialSubject)) : initialSubject,
-                password: editingItem.password || "",
+                password: "", // Security: Do not pre-fill existing password
                 status: editingItem.status || "active",
                 class: editingItem.class || ""
             });
@@ -85,6 +85,8 @@ export default function TeacherModal() {
 
             const payload = {
                 ...formData,
+                password: (modalMode === 'edit' && !formData.password) ? (editingItem?.password || "") : formData.password,
+                email: formData.email.trim().toLowerCase(),
                 class: classString,
                 type: "teacher",
             };
@@ -227,15 +229,18 @@ export default function TeacherModal() {
                         </FormGroup>
 
                         <div className="grid grid-cols-1 gap-4">
-                            <FormGroup label="Password Akun *" required>
+                            <FormGroup
+                                label={modalMode === 'edit' ? "Ganti Password (Kosongkan jika tidak diubah)" : "Password Akun *"}
+                                required={modalMode !== 'edit'}
+                            >
                                 <div className="relative">
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         value={formData.password}
                                         onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                        required
+                                        required={modalMode !== 'edit'}
                                         className="input-modern pr-14 font-mono tracking-widest"
-                                        placeholder="Min. 6 karakter"
+                                        placeholder={modalMode === 'edit' ? "•••••••• (Rahasia)" : "Min. 6 karakter"}
                                     />
                                     <button
                                         type="button"
