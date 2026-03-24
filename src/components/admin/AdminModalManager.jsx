@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useApp } from "@/context/AppContext";
-import TeacherModal from "./modals/TeacherModal";
+import TeacherModal from "../modals/TeacherModal";
 import DeleteConfirmModal from "../modals/DeleteConfirmModal";
 
 export default function AdminModalManager() {

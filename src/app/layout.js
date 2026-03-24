@@ -5,12 +5,27 @@ import { AppProvider } from '@/context/AppContext';
 const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'] });
 
 export const metadata = {
-    title: 'Aplikasi Guru Merdeka Mengajar',
-    description: 'Platform Administrasi Guru & Sekolah Kurikulum Merdeka',
+    title: 'Aplikasi Guru Merdeka Mengajar - Administrasi Sekolah Digital',
+    description: 'Platform Administrasi Guru & Sekolah Kurikulum Merdeka Terpadu. Sederhanakan Absensi, Nilai, Jurnal, dan Modul Ajar dengan bantuan AI.',
+    keywords: ['aplikasi guru', 'administrasi sekolah', 'kurikulum merdeka', 'guru merdeka', 'jurnal guru digital', 'absensi siswa online', 'ai modul ajar', 'manajemen nilai'],
+    robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            'max-video-preview': -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+        },
+    },
+    alternates: {
+        canonical: 'https://aplikasi-guru.vercel.app',
+    },
     openGraph: {
         title: 'Aplikasi Guru Merdeka Mengajar',
         description: 'Solusi administrasi sekolah modern: Modul Ajar AI, Absensi Real-time, dan Laporan Terpadu.',
-        url: 'https://aplikasi-guru.vercel.app', // Sesuaikan dengan domain Anda
+        url: 'https://aplikasi-guru.vercel.app',
         siteName: 'Aplikasi Guru Indonesia',
         images: [
             {

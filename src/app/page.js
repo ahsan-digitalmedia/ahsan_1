@@ -107,7 +107,7 @@ export default function LandingPage() {
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                             <Link
-                                href="/login"
+                                href="/register"
                                 className="bg-teal-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-teal-200 hover:bg-teal-700 hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-3 group"
                             >
                                 Mulai Sekarang
@@ -244,8 +244,8 @@ export default function LandingPage() {
                         </span>
                     </div>
 
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">
-                        &copy; 2026 {config?.app_name || "Guru Merdeka"} &bull; Developed by Tri Susilo, A.Md
+                    <p className="text-[11px] font-bold text-slate-400 capitalize tracking-widest text-center">
+                        &copy; 2026 {config?.app_name || "Aplikasi Administrasi Guru"} &bull; Developed by Tri Susilo, A.Md
                     </p>
 
                     <div className="flex gap-6 text-[11px] font-bold text-slate-400 uppercase tracking-widest">

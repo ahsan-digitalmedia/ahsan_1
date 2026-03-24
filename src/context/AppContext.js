@@ -50,6 +50,13 @@ export function AppProvider({ children }) {
         }
         isProcessing.current = true;
         console.log(`AppContext: Starting processData (triggered by ${triggeredBy})`);
+
+        // Only set loading to true for initial or auth-triggered fetches
+        // We don't want to show a global loading screen for background realtime updates
+        if (triggeredBy !== 'realtime') {
+            setState(prev => ({ ...prev, isLoading: true }));
+        }
+
         try {
             // 1. Fetch Global Config First (Available to everyone)
             const { data: configRecord, error: configError } = await supabase

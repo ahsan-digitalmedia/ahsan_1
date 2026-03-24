@@ -13,6 +13,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showPassword, setShowPassword] = useState(false);
     const { state } = useApp();
     const config = state.config;
     const adminPhone = config?.admin_contact?.replace(/[^0-9]/g, '') || "6285268474347";
@@ -35,9 +36,9 @@ export default function LoginPage() {
             if (data.user) {
                 // Simple role check
                 if (email === 'admin@sekolah.id') {
-                    router.push('/admin/dashboard');
+                    router.replace('/admin/dashboard');
                 } else {
-                    router.push('/guru/dashboard');
+                    router.replace('/guru/dashboard');
                 }
             }
         } catch (err) {
@@ -97,14 +98,27 @@ export default function LoginPage() {
 
                         <div>
                             <label className="label-modern">Kata Sandi</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="input-modern"
-                                placeholder="••••••••"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="input-modern pr-14"
+                                    placeholder="••••••••"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+                                >
+                                    {showPassword ? (
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                    ) : (
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 014.125-5.125m5.438-1.576A10.05 10.05 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21m-2.102-2.102L3 3" /></svg>
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         <div className="flex items-center justify-between text-[11px]">
@@ -137,9 +151,9 @@ export default function LoginPage() {
                         </div>
                     </form>
 
-                    <div className="mt-10 pt-6 border-t border-slate-100 text-center text-slate-400">
-                        <p className="text-[10px]">&copy; 2026 Digital Administrasi Guru</p>
-                        <p className="text-[10px] mt-1 opacity-70">Aplikasi ini di Kembangkan Oleh Tri Susilo, A.Md</p>
+                    <div className="mt-10 pt-6 border-t border-slate-100 text-center text-slate-400 capitalize">
+                        <p className="text-[10px] tracking-widest">&copy; 2026 Aplikasi Administrasi Guru</p>
+                        <p className="text-[10px] mt-1 opacity-70 tracking-widest">&bull; Developed By Tri Susilo, A.Md</p>
                     </div>
                 </div>
             </div>

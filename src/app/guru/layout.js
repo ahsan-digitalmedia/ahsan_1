@@ -26,7 +26,8 @@ export default function GuruLayout({ children }) {
                 setIsCheckingStatus(false);
             }
         } else if (!isLoading) {
-            setIsCheckingStatus(false);
+            // Redirect to home if not logged in
+            router.replace("/");
         }
     }, [currentUser, isLoading, router]);
 
@@ -53,7 +54,7 @@ export default function GuruLayout({ children }) {
             currentUserType: null,
             currentPage: "login",
         });
-        router.push("/");
+        router.replace("/");
     };
 
     const menuItems = [
