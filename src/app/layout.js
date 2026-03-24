@@ -5,6 +5,7 @@ import { AppProvider } from '@/context/AppContext';
 const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'] });
 
 export const metadata = {
+    metadataBase: new URL('https://aplikasi-guru.vercel.app'),
     title: 'Aplikasi Guru Merdeka Mengajar - Administrasi Sekolah Digital',
     description: 'Platform Administrasi Guru & Sekolah Kurikulum Merdeka Terpadu. Sederhanakan Absensi, Nilai, Jurnal, dan Modul Ajar dengan bantuan AI.',
     keywords: ['aplikasi guru', 'administrasi sekolah', 'kurikulum merdeka', 'guru merdeka', 'jurnal guru digital', 'absensi siswa online', 'ai modul ajar', 'manajemen nilai'],
