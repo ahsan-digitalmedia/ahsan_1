@@ -278,7 +278,7 @@ export default function AttendancePage() {
                     <title>Cetak Absensi - ${schoolName}</title>
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-                        body { font-family: 'Inter', sans-serif; padding: 0; color: #000; font-size: 12px; }
+                        body, .print-body { font-family: 'Inter', sans-serif; padding: 0; color: #000; font-size: 12px; background: white; }
                         .header { text-align: center; margin-bottom: 20px; border-bottom: 3px double #000; padding-bottom: 10px; }
                         .school-name { font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase; }
                         .report-title { font-size: 14px; font-weight: bold; margin: 5px 0; text-decoration: underline; }
@@ -375,10 +375,27 @@ export default function AttendancePage() {
             const html = await getAttendancePrintHTML(type);
 
             const element = document.createElement('div');
-            element.innerHTML = html;
+            element.className = 'print-body';
             element.style.position = 'absolute';
             element.style.left = '-9999px';
-            element.style.top = '-9999px';
+            element.style.top = '0';
+            element.style.width = type === 'Mingguan' ? '1130px' : '800px';
+            element.style.zIndex = '-9999';
+            element.style.opacity = '1';
+            element.style.pointerEvents = 'none';
+            element.style.background = '#fff';
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            doc.querySelectorAll('style').forEach(style => {
+                element.appendChild(style.cloneNode(true));
+            });
+
+            const bodyContent = document.createElement('div');
+            bodyContent.innerHTML = doc.body.innerHTML;
+            element.appendChild(bodyContent);
+
             document.body.appendChild(element);
 
             const opt = {

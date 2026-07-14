@@ -33,7 +33,7 @@ export default function ModulAjarPage() {
             <head>
                 <title>Modul Ajar - ${modul.modul_topic}</title>
                 <style>
-                    body { 
+                    body, .print-body { 
                         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
                         line-height: 1.5; 
                         color: #1a1a1a; 
@@ -223,10 +223,27 @@ export default function ModulAjarPage() {
             const html = getModulHTML(modul);
 
             const element = document.createElement('div');
-            element.innerHTML = html;
+            element.className = 'print-body';
             element.style.position = 'absolute';
             element.style.left = '-9999px';
-            element.style.top = '-9999px';
+            element.style.top = '0';
+            element.style.width = '800px';
+            element.style.zIndex = '-9999';
+            element.style.opacity = '1';
+            element.style.pointerEvents = 'none';
+            element.style.background = '#fff';
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            doc.querySelectorAll('style').forEach(style => {
+                element.appendChild(style.cloneNode(true));
+            });
+
+            const bodyContent = document.createElement('div');
+            bodyContent.innerHTML = doc.body.innerHTML;
+            element.appendChild(bodyContent);
+
             document.body.appendChild(element);
 
             const opt = {
