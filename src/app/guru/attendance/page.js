@@ -273,28 +273,24 @@ export default function AttendancePage() {
         }
 
         return `
-            <html>
-                <head>
-                    <title>Cetak Absensi - ${schoolName}</title>
-                    <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-                        body, .print-body { font-family: 'Inter', sans-serif; padding: 0; color: #000; font-size: 12px; background: white; }
-                        .header { text-align: center; margin-bottom: 20px; border-bottom: 3px double #000; padding-bottom: 10px; }
-                        .school-name { font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase; }
-                        .report-title { font-size: 14px; font-weight: bold; margin: 5px 0; text-decoration: underline; }
-                        .meta-grid { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 13px; }
-                        .meta-left p, .meta-right p { margin: 2px 0; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
-                        th, td { border: 1px solid #000; padding: 5px; font-size: 11px; }
-                        th { background-color: #f3f4f6; }
-                        .footer { margin-top: 40px; display: flex; justify-content: space-between; break-inside: avoid; page-break-inside: avoid; }
-                        .sig-box { width: 45%; text-align: center; }
-                        .sig-space { height: 60px; }
-                        .sig-name { font-weight: bold; text-decoration: underline; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
+            <div id="print-container">
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+                    #print-container, .print-body { font-family: 'Inter', sans-serif; padding: 0; color: #000; font-size: 12px; background: white; }
+                    #print-container .header { text-align: center; margin-bottom: 20px; border-bottom: 3px double #000; padding-bottom: 10px; }
+                    #print-container .school-name { font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase; }
+                    #print-container .report-title { font-size: 14px; font-weight: bold; margin: 5px 0; text-decoration: underline; }
+                    #print-container .meta-grid { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 13px; }
+                    #print-container .meta-left p, #print-container .meta-right p { margin: 2px 0; }
+                    #print-container table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
+                    #print-container th, #print-container td { border: 1px solid #000; padding: 5px; font-size: 11px; }
+                    #print-container th { background-color: #f3f4f6; }
+                    #print-container .footer { margin-top: 40px; display: flex; justify-content: space-between; break-inside: avoid; page-break-inside: avoid; }
+                    #print-container .sig-box { width: 45%; text-align: center; }
+                    #print-container .sig-space { height: 60px; }
+                    #print-container .sig-name { font-weight: bold; text-decoration: underline; }
+                </style>
+                <div class="header">
                         <div class="report-title">${title}</div>
                         <h1 class="school-name">${currentUser?.school_name || schoolName}</h1>
                         <p style="margin: 2px 0;">${currentUser?.school_address || "Alamat Sekolah Belum Diisi"}</p>
@@ -335,8 +331,7 @@ export default function AttendancePage() {
                             <p>NIP. ${currentUser?.nip || '-'}</p>
                         </div>
                     </div>
-                </body>
-            </html>
+            </div>
         `;
     };
 
@@ -374,40 +369,15 @@ export default function AttendancePage() {
             const html2pdf = (await import('html2pdf.js')).default;
             const html = await getAttendancePrintHTML(type);
 
-            const element = document.createElement('div');
-            element.className = 'print-body';
-            element.style.position = 'absolute';
-            element.style.left = '-9999px';
-            element.style.top = '0';
-            element.style.width = type === 'Mingguan' ? '1130px' : '800px';
-            element.style.zIndex = '-9999';
-            element.style.opacity = '1';
-            element.style.pointerEvents = 'none';
-            element.style.background = '#fff';
-
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-
-            doc.querySelectorAll('style').forEach(style => {
-                element.appendChild(style.cloneNode(true));
-            });
-
-            const bodyContent = document.createElement('div');
-            bodyContent.innerHTML = doc.body.innerHTML;
-            element.appendChild(bodyContent);
-
-            document.body.appendChild(element);
-
             const opt = {
                 margin: 15,
                 filename: `Absensi_${type}_Kelas_${selectedClass}_${selectedDate}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
+                html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: type === 'Mingguan' ? 1130 : 800 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: type === 'Mingguan' ? 'landscape' : 'portrait' }
             };
 
-            await html2pdf().set(opt).from(element).save();
-            document.body.removeChild(element);
+            await html2pdf().set(opt).from(html).save();
         } catch (e) {
             console.error("PDF download error:", e);
             alert("Gagal mengunduh PDF: " + e.message);

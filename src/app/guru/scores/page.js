@@ -294,31 +294,27 @@ export default function ScoresPage() {
         }
 
         return `
-            <html>
-                <head>
-                    <title>Rekap Nilai - ${selectedSubject}</title>
-                    <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-                        body, .print-body { font-family: 'Inter', sans-serif; font-size: 11px; padding: 20px; color: #1e293b; background: white; }
-                        .header { text-align: center; margin-bottom: 25px; border-bottom: 3px double #000; padding-bottom: 10px; }
-                        .report-title { font-size: 15px; font-weight: bold; text-decoration: underline; margin-bottom: 5px; color: #000; }
-                        .school-name { font-size: 20px; font-weight: bold; margin: 0; color: #000; }
-                        .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                        th, td { border: 1px solid #000; padding: 8px 5px; }
-                        th { background: #f1f5f9; font-weight: bold; text-transform: uppercase; font-size: 10px; }
-                        .footer { margin-top: 40px; display: flex; justify-content: space-between; text-align: center; break-inside: avoid; page-break-inside: avoid; }
-                        .sig-box { width: 45%; }
-                        .sig-space { height: 70px; }
-                        .sig-name { font-weight: bold; text-decoration: underline; font-size: 12px; }
-                        @media print {
-                            body { padding: 0; }
-                            button { display: none; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
+            <div id="print-container">
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+                    #print-container, .print-body { font-family: 'Inter', sans-serif; font-size: 11px; padding: 20px; color: #1e293b; background: white; }
+                    #print-container .header { text-align: center; margin-bottom: 25px; border-bottom: 3px double #000; padding-bottom: 10px; }
+                    #print-container .report-title { font-size: 15px; font-weight: bold; text-decoration: underline; margin-bottom: 5px; color: #000; }
+                    #print-container .school-name { font-size: 20px; font-weight: bold; margin: 0; color: #000; }
+                    #print-container .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12px; }
+                    #print-container table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    #print-container th, #print-container td { border: 1px solid #000; padding: 8px 5px; }
+                    #print-container th { background: #f1f5f9; font-weight: bold; text-transform: uppercase; font-size: 10px; }
+                    #print-container .footer { margin-top: 40px; display: flex; justify-content: space-between; text-align: center; break-inside: avoid; page-break-inside: avoid; }
+                    #print-container .sig-box { width: 45%; }
+                    #print-container .sig-space { height: 70px; }
+                    #print-container .sig-name { font-weight: bold; text-decoration: underline; font-size: 12px; }
+                    @media print {
+                        body { padding: 0; }
+                        button { display: none; }
+                    }
+                </style>
+                <div class="header">
                         <div class="report-title">${reportTitle}</div>
                         <h1 class="school-name">${schoolName}</h1>
                         <p style="margin: 5px 0;">${currentUser?.school_address || "-"}</p>
@@ -360,8 +356,7 @@ export default function ScoresPage() {
                             }, 500);
                         };
                     </script>
-                </body>
-            </html>
+            </div>
         `;
     };
 
@@ -389,46 +384,15 @@ export default function ScoresPage() {
             const html2pdf = (await import('html2pdf.js')).default;
             const html = getScoresHTML(type);
 
-            const element = document.createElement('div');
-            element.className = 'print-body';
-            element.style.position = 'absolute';
-            element.style.left = '-9999px';
-            element.style.top = '0';
-            element.style.width = (type === 'pts' || type === 'pas') ? '800px' : '1130px';
-            element.style.zIndex = '-9999';
-            element.style.opacity = '1';
-            element.style.pointerEvents = 'none';
-            element.style.background = '#fff';
-
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-
-            doc.querySelectorAll('style').forEach(style => {
-                element.appendChild(style.cloneNode(true));
-            });
-
-            const bodyContent = document.createElement('div');
-            bodyContent.innerHTML = doc.body.innerHTML;
-            element.appendChild(bodyContent);
-
-            document.body.appendChild(element);
-
-            let docTitle = "Rekap Nilai";
-            if (type === 'formatif') docTitle = "Nilai_Formatif";
-            else if (type === 'sumatif') docTitle = "Nilai_Sumatif";
-            else if (type === 'pts') docTitle = "Nilai_PTS";
-            else if (type === 'pas') docTitle = "Nilai_PAS";
-
             const opt = {
                 margin: 15,
                 filename: `${docTitle}_${selectedSubject.replace(/[^a-zA-Z0-9]/g, '_')}_Kelas_${selectedClass}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
+                html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 800 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: type === 'pts' || type === 'pas' ? 'portrait' : 'landscape' }
             };
 
-            await html2pdf().set(opt).from(element).save();
-            document.body.removeChild(element);
+            await html2pdf().set(opt).from(html).save();
         } catch (e) {
             console.error("PDF download error:", e);
             alert("Gagal mengunduh PDF: " + e.message);

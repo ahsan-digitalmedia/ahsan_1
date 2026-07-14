@@ -84,22 +84,18 @@ export default function JournalPage() {
         }
 
         return `
-            <html>
-                <head>
-                    <title>Jurnal ${type === 'kelas' ? 'Kelas' : 'Mengajar'} - ${monthYear}</title>
-                    <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-                        body, .print-body { font-family: 'Inter', sans-serif; padding: 40px; font-size: 12px; background: white; }
-                        .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px double #000; }
-                        h1 { font-size: 18px; margin: 0; text-transform: uppercase; }
-                        .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-weight: bold; }
-                        .footer { margin-top: 50px; display: flex; justify-content: flex-end; break-inside: avoid; page-break-inside: avoid; }
-                        .sig-box { text-align: center; width: 250px; }
-                        .sig-space { height: 80px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
+            <div id="print-container">
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+                    #print-container, .print-body { font-family: 'Inter', sans-serif; padding: 40px; font-size: 12px; background: white; }
+                    #print-container .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px double #000; }
+                    #print-container h1 { font-size: 18px; margin: 0; text-transform: uppercase; }
+                    #print-container .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-weight: bold; }
+                    #print-container .footer { margin-top: 50px; display: flex; justify-content: flex-end; break-inside: avoid; page-break-inside: avoid; }
+                    #print-container .sig-box { text-align: center; width: 250px; }
+                    #print-container .sig-space { height: 80px; }
+                </style>
+                <div class="header">
                         <h1>JURNAL ${type === 'kelas' ? 'KELAS' : 'MENGAJAR GURU'}</h1>
                         <p>${currentUser?.school_name || '-'}</p>
                         <p>PERIODE: ${monthYear}</p>
@@ -121,8 +117,7 @@ export default function JournalPage() {
                         </div>
                     </div>
                     <script>window.onload = () => window.print();</script>
-                </body>
-            </html>
+            </div>
         `;
     };
 
@@ -152,40 +147,15 @@ export default function JournalPage() {
             const monthYear = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
             const html = getJournalHTML(type, journals, monthYear);
 
-            const element = document.createElement('div');
-            element.className = 'print-body';
-            element.style.position = 'absolute';
-            element.style.left = '-9999px';
-            element.style.top = '0';
-            element.style.width = '800px';
-            element.style.zIndex = '-9999';
-            element.style.opacity = '1';
-            element.style.pointerEvents = 'none';
-            element.style.background = '#fff';
-
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-
-            doc.querySelectorAll('style').forEach(style => {
-                element.appendChild(style.cloneNode(true));
-            });
-
-            const bodyContent = document.createElement('div');
-            bodyContent.innerHTML = doc.body.innerHTML;
-            element.appendChild(bodyContent);
-
-            document.body.appendChild(element);
-
             const opt = {
                 margin: 15,
                 filename: `Jurnal_${type === 'kelas' ? 'Kelas' : 'Mengajar'}_${monthYear.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
+                html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 800 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            await html2pdf().set(opt).from(element).save();
-            document.body.removeChild(element);
+            await html2pdf().set(opt).from(html).save();
         } catch (e) {
             console.error("PDF download error:", e);
             alert("Gagal mengunduh PDF: " + e.message);

@@ -29,11 +29,9 @@ export default function ModulAjarPage() {
         if (displaySubject === "IPAS") displaySubject = "Ilmu Pengetahuan Alam dan Sosial (IPAS)";
 
         return `
-            <html>
-            <head>
-                <title>Modul Ajar - ${modul.modul_topic}</title>
+            <div id="print-container">
                 <style>
-                    body, .print-body { 
+                    #print-container, .print-body { 
                         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
                         line-height: 1.5; 
                         color: #1a1a1a; 
@@ -41,53 +39,52 @@ export default function ModulAjarPage() {
                         font-size: 11px; 
                         max-width: 850px; 
                         margin: 0 auto; 
+                        background: #fff;
                     }
                     
                     /* Header / Kop */
-                    .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px; }
-                    .header h1 { font-size: 20px; font-weight: 800; text-transform: uppercase; margin: 0; }
-                    .header p { font-size: 10px; margin: 4px 0; color: #444; }
+                    #print-container .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px; }
+                    #print-container .header h1 { font-size: 20px; font-weight: 800; text-transform: uppercase; margin: 0; }
+                    #print-container .header p { font-size: 10px; margin: 4px 0; color: #444; }
                     
-                    .doc-title { text-align: center; margin-bottom: 30px; }
-                    .doc-title h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; margin: 0; border: 1.5px solid #000; display: inline-block; padding: 6px 18px; border-radius: 4px; }
+                    #print-container .doc-title { text-align: center; margin-bottom: 30px; }
+                    #print-container .doc-title h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; margin: 0; border: 1.5px solid #000; display: inline-block; padding: 6px 18px; border-radius: 4px; }
                     
-                    .section { margin-bottom: 25px; }
-                    .section-header { font-size: 12px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 12px; color: #000; }
+                    #print-container .section { margin-bottom: 25px; }
+                    #print-container .section-header { font-size: 12px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 12px; color: #000; }
 
                     /* Info Grid */
-                    .info-grid { display: flex; flex-wrap: wrap; gap: 8px 0; margin-bottom: 15px; }
-                    .info-item { width: 50%; display: flex; box-sizing: border-box; padding-right: 15px; }
-                    .info-label { font-weight: 700; width: 110px; color: #333; flex-shrink: 0; }
-                    .info-value { color: #000; }
-                    .info-full { width: 100%; }
+                    #print-container .info-grid { display: flex; flex-wrap: wrap; gap: 8px 0; margin-bottom: 15px; }
+                    #print-container .info-item { width: 50%; display: flex; box-sizing: border-box; padding-right: 15px; }
+                    #print-container .info-label { font-weight: 700; width: 110px; color: #333; flex-shrink: 0; }
+                    #print-container .info-value { color: #000; }
+                    #print-container .info-full { width: 100%; }
 
-                    .sub-title { font-weight: 700; font-size: 10.5px; color: #222; margin: 12px 0 6px 0; display: block; text-transform: uppercase; }
-                    .text-content { background: #fcfcfc; border-radius: 6px; padding: 12px; border-left: 3px solid #ddd; color: #333; white-space: pre-wrap; margin-bottom: 12px; border: 1px solid #eee; }
+                    #print-container .sub-title { font-weight: 700; font-size: 10.5px; color: #222; margin: 12px 0 6px 0; display: block; text-transform: uppercase; }
+                    #print-container .text-content { background: #fcfcfc; border-radius: 6px; padding: 12px; border-left: 3px solid #ddd; color: #333; white-space: pre-wrap; margin-bottom: 12px; border: 1px solid #eee; }
                     
                     /* Assessment Grid */
-                    .card-grid { display: flex; gap: 12px; margin-top: 8px; }
-                    .card { flex: 1; border: 1px solid #eee; border-radius: 8px; padding: 12px; background: #fff; }
-                    .card-label { font-weight: 700; font-size: 8.5px; text-transform: uppercase; color: #777; margin-bottom: 5px; display: block; }
-                    .card-value { color: #000; font-weight: 500; }
+                    #print-container .card-grid { display: flex; gap: 12px; margin-top: 8px; }
+                    #print-container .card { flex: 1; border: 1px solid #eee; border-radius: 8px; padding: 12px; background: #fff; }
+                    #print-container .card-label { font-weight: 700; font-size: 8.5px; text-transform: uppercase; color: #777; margin-bottom: 5px; display: block; }
+                    #print-container .card-value { color: #000; font-weight: 500; }
 
                     /* Signatures */
-                    .footer-sig { 
+                    #print-container .footer-sig { 
                         margin-top: 50px; 
                         display: flex; 
                         justify-content: space-between; 
                         width: 100%;
                         page-break-inside: avoid; 
                     }
-                    .sig-box { text-align: center; width: 45%; }
-                    .sig-line { margin: 55px auto 8px; width: 100%; border-top: 1px solid #000; font-weight: 700; padding-top: 4px; text-transform: uppercase; }
+                    #print-container .sig-box { text-align: center; width: 45%; }
+                    #print-container .sig-line { margin: 55px auto 8px; width: 100%; border-top: 1px solid #000; font-weight: 700; padding-top: 4px; text-transform: uppercase; }
                     
                     @media print {
                         body { padding: 0; margin: 0 auto; }
-                        .text-content { background: none; border: 1px solid #eee; }
+                        #print-container .text-content { background: none; border: 1px solid #eee; }
                     }
                 </style>
-            </head>
-            <body>
                 <div class="header">
                     <h1>${modul.modul_school_name || currentUser?.school_name || "NAMA SEKOLAH"}</h1>
                     <p>${currentUser?.school_address || "Alamat sekolah belum diatur"}</p>
@@ -176,8 +173,7 @@ export default function ModulAjarPage() {
                         <p style="font-size:9px">NIP. ${currentUser?.nip || '................................'}</p>
                     </div>
                 </div>
-            </body>
-            </html>
+            </div >
         `;
     };
 
@@ -222,40 +218,15 @@ export default function ModulAjarPage() {
             const html2pdf = (await import('html2pdf.js')).default;
             const html = getModulHTML(modul);
 
-            const element = document.createElement('div');
-            element.className = 'print-body';
-            element.style.position = 'absolute';
-            element.style.left = '-9999px';
-            element.style.top = '0';
-            element.style.width = '800px';
-            element.style.zIndex = '-9999';
-            element.style.opacity = '1';
-            element.style.pointerEvents = 'none';
-            element.style.background = '#fff';
-
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-
-            doc.querySelectorAll('style').forEach(style => {
-                element.appendChild(style.cloneNode(true));
-            });
-
-            const bodyContent = document.createElement('div');
-            bodyContent.innerHTML = doc.body.innerHTML;
-            element.appendChild(bodyContent);
-
-            document.body.appendChild(element);
-
             const opt = {
                 margin: 15,
                 filename: `Modul_Ajar_${modul.modul_topic.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
+                html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 800 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            await html2pdf().set(opt).from(element).save();
-            document.body.removeChild(element);
+            await html2pdf().set(opt).from(html).save();
         } catch (e) {
             console.error("PDF download error:", e);
             alert("Gagal mengunduh PDF: " + e.message);
