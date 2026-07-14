@@ -139,8 +139,7 @@ export async function POST(req) {
         const firstBrace = extractedJson.indexOf('{');
         const lastBrace = extractedJson.lastIndexOf('}');
 
-        // TEMPORARY DEBUGGING
-        require('fs').writeFileSync('d:\\DATA TRIS\\Project Website\\aplikasi-guru\\ai_debug_log.txt', JSON.stringify({ aiText, result }, null, 2));
+
 
         if (firstBrace !== -1 && lastBrace !== -1) {
             extractedJson = extractedJson.substring(firstBrace, lastBrace + 1);
