@@ -514,11 +514,11 @@ export default function ScoresPage() {
                             </div>
                         )}
                         <div className="overflow-x-auto w-full">
-                            <table className="w-full text-left border-collapse min-w-[1200px]">
+                            <table className="w-full text-left border-collapse min-w-max">
                                 <thead>
                                     <tr className="bg-slate-50/20 border-b border-slate-50">
                                         <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 w-12 text-center tracking-widest">No</th>
-                                        <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 tracking-widest">Nama Lengkap Siswa</th>
+                                        <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 tracking-widest min-w-[250px]">Nama Lengkap Siswa</th>
                                         <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 text-center w-24 tracking-widest">NISN</th>
                                         <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 text-center w-16 tracking-widest">Kls</th>
 

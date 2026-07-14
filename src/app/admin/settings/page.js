@@ -104,9 +104,11 @@ export default function AdminSettingsPage() {
                         <div className="p-7 space-y-6">
                             <FormGroup label="Tahun Pelajaran Default">
                                 <select value={schoolData.academic_year} onChange={e => setSchoolData({ ...schoolData, academic_year: e.target.value })} className="input-modern cursor-pointer">
-                                    <option value="2023/2024">TAHUN 2023/2024</option>
-                                    <option value="2024/2025">TAHUN 2024/2025</option>
-                                    <option value="2025/2026">TAHUN 2025/2026</option>
+                                    {Array.from({ length: 28 }, (_, i) => 2023 + i).map(year => (
+                                        <option key={`${year}/${year + 1}`} value={`${year}/${year + 1}`}>
+                                            TAHUN {year}/{year + 1}
+                                        </option>
+                                    ))}
                                 </select>
                             </FormGroup>
                             <FormGroup label="Semester Default">

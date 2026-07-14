@@ -113,7 +113,7 @@ export default function ModulAjarPage() {
 
                 <div class="section">
                     <div class="section-header">II. Komponen Inti</div>
-                    <span class="sub-title">A. Kompetensi Awal</span>
+                    <span class="sub-title">A. Capaian Pembelajaran (CP)</span>
                     <div class="text-content">${modul.modul_comp_initial || '-'}</div>
                     
                     <span class="sub-title">B. Tujuan Pembelajaran</span>

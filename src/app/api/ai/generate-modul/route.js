@@ -40,7 +40,7 @@ export async function POST(req) {
                 "modul_jp": "2",
                 "modul_semester": "${teacherInfo.semester || '1'}",
                 "modul_academic_year": "${teacherInfo.academic_year || '2024/2025'}",
-                "modul_comp_initial": "...",
+                "modul_comp_initial": "Isi dengan Capaian Pembelajaran (CP) yang sesuai dengan Topik dan Kelas",
                 "modul_tp": "...",
                 "modul_meaningful": "...",
                 "modul_method": "...",
@@ -63,7 +63,7 @@ export async function POST(req) {
 
         // Detect API Provider
         const isOpenRouter = apiKey.startsWith("sk-or-");
-        const modelName = isOpenRouter ? "google/gemini-2.0-flash-001" : "gemini-2.0-flash";
+        const modelName = isOpenRouter ? "google/gemini-3.5-flash" : "gemini-2.0-flash";
 
         let apiUrl, fetchOptions;
 
@@ -82,8 +82,7 @@ export async function POST(req) {
                     model: modelName,
                     messages: [{ role: "user", content: prompt }],
                     temperature: 0.7,
-                    max_tokens: 2048,
-                    response_format: { type: "json_object" }
+                    max_tokens: 2048
                 })
             };
         } else {
@@ -135,25 +134,24 @@ export async function POST(req) {
             throw new Error("AI tidak memberikan respon teks. Silakan coba lagi.");
         }
 
-        // Extremely robust JSON extraction
+        // Extremely robust JSON extraction using regex and bracing
         let extractedJson = aiText.trim();
+        const firstBrace = extractedJson.indexOf('{');
+        const lastBrace = extractedJson.lastIndexOf('}');
 
-        // Remove markdown code blocks if present
-        if (extractedJson.includes("```json")) {
-            extractedJson = extractedJson.split("```json")[1].split("```")[0].trim();
-        } else if (extractedJson.includes("```")) {
-            extractedJson = extractedJson.split("```")[1].split("```")[0].trim();
-        } else {
-            // Find the first { and last }
-            const firstBrace = extractedJson.indexOf('{');
-            const lastBrace = extractedJson.lastIndexOf('}');
-            if (firstBrace !== -1 && lastBrace !== -1) {
-                extractedJson = extractedJson.substring(firstBrace, lastBrace + 1);
-            }
+        // TEMPORARY DEBUGGING
+        require('fs').writeFileSync('d:\\DATA TRIS\\Project Website\\aplikasi-guru\\ai_debug_log.txt', JSON.stringify({ aiText, result }, null, 2));
+
+        if (firstBrace !== -1 && lastBrace !== -1) {
+            extractedJson = extractedJson.substring(firstBrace, lastBrace + 1);
         }
 
         try {
-            const data = JSON.parse(extractedJson);
+            let data = JSON.parse(extractedJson);
+            // Robustness: if AI wrapped it in 'data' or similar
+            if (data.data && !data.modul_topic) data = data.data;
+            if (data.modul && !data.modul_topic) data = data.modul;
+
             return NextResponse.json(data);
         } catch (parseError) {
             console.error("JSON Parse Error. Raw text:", aiText);

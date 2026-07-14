@@ -23,7 +23,7 @@ export default function LandingPage() {
     const features = [
         {
             title: "Absensi Digital",
-            desc: "Pencatatan kehadiran siswa yang cepat, akurat, dan otomatis terkapis.",
+            desc: "Pencatatan kehadiran siswa yang cepat, akurat, dan otomatis terlapis.",
             icon: "📋",
             color: "bg-teal-50"
         },

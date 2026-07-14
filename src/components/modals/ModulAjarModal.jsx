@@ -495,9 +495,9 @@ export default function ModulAjarModal() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="group">
                                         <label className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-2 block group-focus-within:text-teal-500 transition-colors flex items-center gap-2">
-                                            <span className="w-5 h-5 rounded bg-slate-100 flex items-center justify-center text-[8px]">🎯</span> Kompetensi Awal
+                                            <span className="w-5 h-5 rounded bg-slate-100 flex items-center justify-center text-[8px]">🎯</span> Capaian Pembelajaran (CP)
                                         </label>
-                                        <textarea value={formData.modul_comp_initial} onChange={e => setFormData({ ...formData, modul_comp_initial: e.target.value })} className="w-full h-24 bg-slate-50 border border-slate-200 rounded-lg p-4 font-medium text-slate-600 focus:border-teal-400 focus:bg-white outline-none transition-all resize-none text-xs leading-relaxed" placeholder="Kemampuan prasyarat yang harus dimiliki siswa..." />
+                                        <textarea value={formData.modul_comp_initial} onChange={e => setFormData({ ...formData, modul_comp_initial: e.target.value })} className="w-full h-24 bg-slate-50 border border-slate-200 rounded-lg p-4 font-medium text-slate-600 focus:border-teal-400 focus:bg-white outline-none transition-all resize-none text-xs leading-relaxed" placeholder="Capaian pembelajaran yang harus dikuasai siswa..." />
                                     </div>
 
                                     {aiInput.approach === "Deep Learning" && (

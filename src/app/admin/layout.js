@@ -111,7 +111,7 @@ export default function AdminLayout({ children }) {
                                 </svg>
                             </div>
                             {!isSidebarCollapsed && (
-                                <span className="text-[11px] font-semibold tracking-wide relative z-10 animate-fadeIn">{item.title}</span>
+                                <span className="text-xs font-bold tracking-wide relative z-10 animate-fadeIn">{item.title}</span>
                             )}
                         </Link>
                     ))}
@@ -120,8 +120,8 @@ export default function AdminLayout({ children }) {
                 <div className={cn("p-4 border-t border-slate-100", isSidebarCollapsed ? "flex justify-center" : "")}>
                     {!isSidebarCollapsed && (
                         <div className="px-4 py-3 mb-2 border border-slate-100 bg-slate-50/50 rounded-lg animate-fadeIn text-center">
-                            <p className="text-[10px] font-bold text-slate-900 leading-tight">System Admin</p>
-                            <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Active Session</p>
+                            <p className="text-xs font-bold text-slate-900 leading-tight">System Admin</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Active Session</p>
                         </div>
                     )}
                     <button
@@ -138,7 +138,7 @@ export default function AdminLayout({ children }) {
                             </svg>
                         </div>
                         {!isSidebarCollapsed && (
-                            <span className="text-[11px] font-semibold tracking-wide animate-fadeIn">Logout</span>
+                            <span className="text-xs font-bold tracking-wide animate-fadeIn">Logout</span>
                         )}
                     </button>
                 </div>
@@ -201,8 +201,8 @@ export default function AdminLayout({ children }) {
             </div>
 
             <div className="flex-1 flex flex-col h-full overflow-hidden relative transition-all">
-                <header className="bg-white border-b border-slate-200 px-8 py-5 shrink-0 z-20 sticky top-0 flex items-center justify-between">
-                    <div className="flex items-center gap-6">
+                <header className="bg-white/85 backdrop-blur-md border-b border-slate-200/60 px-5 lg:px-8 py-4 lg:py-5 shrink-0 z-30 sticky top-0 flex items-center justify-between shadow-sm transition-all">
+                    <div className="flex items-center gap-4 lg:gap-6">
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
                             className="lg:hidden w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500 shadow-sm"
@@ -223,17 +223,47 @@ export default function AdminLayout({ children }) {
                         </button>
 
                         <div>
-                            <h2 className="text-lg font-bold text-slate-900 leading-tight tracking-tight">{title}</h2>
-                            <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-1">Admin Central Control Panel</p>
+                            <h2 className="text-base font-bold text-slate-900 leading-tight tracking-tight">{title}</h2>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Admin Central Control Panel</p>
                         </div>
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 lg:p-10 pb-24 lg:pb-10 bg-slate-50/50">
+                <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 lg:p-10 pb-28 lg:pb-10 bg-slate-50/50">
                     <div className="max-w-[1200px] mx-auto w-full">
                         {children}
                     </div>
                 </main>
+
+                {/* Mobile Bottom Navigation */}
+                <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/85 backdrop-blur-xl border-t border-slate-200/60 z-40 flex items-center justify-around px-2 py-2 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)] text-slate-500" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.path;
+                        return (
+                            <Link
+                                key={item.path}
+                                href={item.path}
+                                className={cn(
+                                    "flex flex-col items-center justify-center w-20 gap-1.5 transition-all outline-none",
+                                    isActive ? "text-indigo-600" : "hover:text-slate-900"
+                                )}
+                            >
+                                <div className={cn(
+                                    "w-9 h-9 flex items-center justify-center rounded-2xl transition-all duration-300",
+                                    isActive ? "bg-indigo-50/80 shadow-sm shadow-indigo-100/50" : "bg-transparent"
+                                )}>
+                                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={isActive ? "2.5" : "2"} d={item.icon}></path>
+                                    </svg>
+                                </div>
+                                <span className={cn(
+                                    "text-[10px] font-bold tracking-widest transition-all duration-300 truncate w-full text-center px-1 uppercase",
+                                    isActive ? "text-indigo-600" : "text-slate-500"
+                                )}>{item.title.split(' ')[0]}</span>
+                            </Link>
+                        )
+                    })}
+                </nav>
             </div>
         </div>
     );

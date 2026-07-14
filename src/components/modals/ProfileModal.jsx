@@ -42,21 +42,21 @@ export default function ProfileModal() {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity" onClick={() => updateState({ showModal: false })}></div>
-            <div className="bg-white rounded-[2rem] md:rounded-[3rem] w-full max-w-3xl relative z-10 animate-zoomIn flex flex-col max-h-[90vh] md:max-h-[95vh] shadow-[0_30px_100px_rgba(0,0,0,0.2)] overflow-hidden border border-white/20">
-                <div className="bg-slate-900 px-6 py-6 md:px-10 md:py-8 text-white shrink-0 relative overflow-hidden">
+            <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] w-full max-w-2xl relative z-10 animate-zoomIn flex flex-col max-h-[90vh] md:max-h-[92vh] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden border border-white/20">
+                <div className="bg-slate-900 px-6 py-6 md:px-8 md:py-8 text-white shrink-0 relative overflow-hidden">
                     <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
                     <div className="relative z-10 flex justify-between items-center gap-4">
                         <div>
-                            <h3 className="text-2xl md:text-3xl font-black tracking-tight leading-none mb-2">Konfigurasi Profil</h3>
-                            <p className="text-slate-400 text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em]">MANAJEMEN IDENTITAS & INSTITUSI</p>
+                            <h3 className="text-xl md:text-2xl font-black tracking-tight leading-none mb-1.5">Konfigurasi Profil</h3>
+                            <p className="text-slate-400 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em]">MANAJEMEN IDENTITAS & INSTITUSI</p>
                         </div>
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-xl md:text-3xl shadow-inner border border-white/10 shrink-0">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md rounded-xl md:rounded-2xl flex items-center justify-center text-lg md:text-2xl shadow-inner border border-white/10 shrink-0">
                             ⚙️
                         </div>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 md:px-10 md:py-10 space-y-8 md:space-y-10 custom-scrollbar">
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 md:px-8 md:py-8 space-y-8 md:space-y-8 custom-scrollbar">
                     {/* Personal Info */}
                     <div className="space-y-6">
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-3">

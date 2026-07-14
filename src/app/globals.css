@@ -34,9 +34,47 @@
   /* 24px - 32px */
 }
 
+/* === Global Density Optimization === */
+@layer components {
+  .overflow-x-auto table th {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .overflow-x-auto table td {
+    padding: 0.4rem 0.6rem !important;
+  }
+
+  .overflow-x-auto table td,
+  .overflow-x-auto table td p,
+  .overflow-x-auto table td div,
+  .overflow-x-auto table td span {
+    font-size: 0.7rem !important;
+  }
+
+  /* Memaksa semua huruf di dalam menu, tombol, form input, dan drop-down select menjadi ekstra kecil */
+  button,
+  input,
+  select,
+  textarea,
+  .btn-primary,
+  .input-modern,
+  .label-modern,
+  option {
+    font-size: 0.75rem !important;
+  }
+
+  /* Mengecilkan nama menu di sidebar dan navigasi agar terlihat profesional / nyaman */
+  nav *,
+  aside *,
+  header * {
+    font-size: 0.85em;
+  }
+}
+
 @layer base {
   html {
-    font-size: 16px;
+    font-size: 11.5px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
