@@ -15,7 +15,7 @@ export default function ModulAjarPage() {
         ? modulAjar.filter(m => m.modul_class === selectedClass)
         : modulAjar;
 
-    const handlePrint = (modul) => {
+    const getModulHTML = (modul) => {
         // Formatting P5
         let p5Content = "-";
         try {
@@ -28,7 +28,7 @@ export default function ModulAjarPage() {
         if (displaySubject === "PJOK") displaySubject = "Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)";
         if (displaySubject === "IPAS") displaySubject = "Ilmu Pengetahuan Alam dan Sosial (IPAS)";
 
-        const html = `
+        return `
             <html>
             <head>
                 <title>Modul Ajar - ${modul.modul_topic}</title>
@@ -179,6 +179,10 @@ export default function ModulAjarPage() {
             </body>
             </html>
         `;
+    };
+
+    const handlePrint = (modul) => {
+        const html = getModulHTML(modul);
 
         // Optimized Print Injection
         let iframe = document.getElementById('print-iframe');
@@ -211,6 +215,34 @@ export default function ModulAjarPage() {
         };
 
         iframe.src = url;
+    };
+
+    const handleDownloadPDF = async (modul) => {
+        try {
+            const html2pdf = (await import('html2pdf.js')).default;
+            const html = getModulHTML(modul);
+
+            const element = document.createElement('div');
+            element.innerHTML = html;
+            element.style.position = 'absolute';
+            element.style.left = '-9999px';
+            element.style.top = '-9999px';
+            document.body.appendChild(element);
+
+            const opt = {
+                margin: 15,
+                filename: `Modul_Ajar_${modul.modul_topic.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            await html2pdf().set(opt).from(element).save();
+            document.body.removeChild(element);
+        } catch (e) {
+            console.error("PDF download error:", e);
+            alert("Gagal mengunduh PDF: " + e.message);
+        }
     };
 
     return (
@@ -259,6 +291,13 @@ export default function ModulAjarPage() {
                                     title="Cetak Modul"
                                 >
                                     <span className="text-lg group-hover/btn:scale-110 transition-transform">🖨️</span>
+                                </button>
+                                <button
+                                    onClick={() => handleDownloadPDF(modul)}
+                                    className="w-10 h-10 bg-slate-50 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all flex items-center justify-center group/btn shadow-sm"
+                                    title="Unduh PDF"
+                                >
+                                    <span className="text-lg group-hover/btn:scale-110 transition-transform">📥</span>
                                 </button>
                                 <button
                                     onClick={() => updateState({ showDeleteConfirm: true, deletingItem: modul })}

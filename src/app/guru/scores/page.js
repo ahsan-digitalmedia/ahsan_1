@@ -173,10 +173,7 @@ export default function ScoresPage() {
     };
 
     // PRINT REPORT
-    const handlePrint = (type) => {
-        setShowPrintMenu(false);
-        if (!selectedClass || !selectedSubject) return;
-
+    const getScoresHTML = (type) => {
         const schoolName = currentUser?.school_name || "SDN 1 PONCOWATI";
         const teacherName = currentUser?.name || "Guru Kelas";
         const semesterLabel = currentUser?.semester === '2' ? 'Genap' : 'Ganjil';
@@ -296,8 +293,7 @@ export default function ScoresPage() {
             }).join('');
         }
 
-        const printWin = window.open('', '_blank');
-        printWin.document.write(`
+        return `
             <html>
                 <head>
                     <title>Rekap Nilai - ${selectedSubject}</title>
@@ -361,14 +357,65 @@ export default function ScoresPage() {
                         window.onload = () => {
                             setTimeout(() => {
                                 window.print();
-                                // window.close(); // Optional: close window after print
                             }, 500);
                         };
                     </script>
                 </body>
             </html>
-        `);
+        `;
+    };
+
+    const handlePrint = (type) => {
+        setShowPrintMenu(false);
+        if (!selectedClass || !selectedSubject) return;
+
+        const html = getScoresHTML(type);
+
+        const printWin = window.open('', '_blank');
+        if (!printWin) {
+            alert("Pop-up diblokir! Harap izinkan pop-up.");
+            return;
+        }
+
+        printWin.document.write(html);
         printWin.document.close();
+    };
+
+    const handleDownloadPDF = async (type) => {
+        setShowPrintMenu(false);
+        if (!selectedClass || !selectedSubject) return;
+
+        try {
+            const html2pdf = (await import('html2pdf.js')).default;
+            const html = getScoresHTML(type);
+
+            const element = document.createElement('div');
+            element.innerHTML = html;
+            element.style.position = 'absolute';
+            element.style.left = '-9999px';
+            element.style.top = '-9999px';
+            document.body.appendChild(element);
+
+            let docTitle = "Rekap Nilai";
+            if (type === 'formatif') docTitle = "Nilai_Formatif";
+            else if (type === 'sumatif') docTitle = "Nilai_Sumatif";
+            else if (type === 'pts') docTitle = "Nilai_PTS";
+            else if (type === 'pas') docTitle = "Nilai_PAS";
+
+            const opt = {
+                margin: 15,
+                filename: `${docTitle}_${selectedSubject.replace(/[^a-zA-Z0-9]/g, '_')}_Kelas_${selectedClass}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: type === 'pts' || type === 'pas' ? 'portrait' : 'landscape' }
+            };
+
+            await html2pdf().set(opt).from(element).save();
+            document.body.removeChild(element);
+        } catch (e) {
+            console.error("PDF download error:", e);
+            alert("Gagal mengunduh PDF: " + e.message);
+        }
     };
 
     return (
@@ -464,29 +511,51 @@ export default function ScoresPage() {
                             <span className="text-base group-hover:scale-110 transition-transform">🖨️</span> CETAK
                         </button>
                         {showPrintMenu && (
-                            <div className="absolute left-0 md:left-auto md:right-0 top-full mt-3 w-64 bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-white/40 p-3 z-50 animate-zoomIn origin-top-left md:origin-top-right">
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-4 py-3 opacity-60">Pilih Laporan</div>
-                                <button onClick={() => { handlePrint('formatif'); setShowPrintMenu(false); }} className="w-full text-left px-5 py-3.5 rounded-2xl hover:bg-indigo-50 text-slate-700 font-black text-[11px] uppercase tracking-widest flex items-center gap-3 transition-colors group/item">
-                                    <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center text-sm group-hover/item:bg-blue-500 group-hover/item:text-white transition-colors">📄</span>
-                                    Cetak Formatif
-                                </button>
-                                <button onClick={() => { handlePrint('sumatif'); setShowPrintMenu(false); }} className="w-full text-left px-5 py-3.5 rounded-2xl hover:bg-indigo-50 text-slate-700 font-black text-[11px] uppercase tracking-widest flex items-center gap-3 transition-colors group/item">
-                                    <span className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center text-sm group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors">📑</span>
-                                    Cetak Sumatif
-                                </button>
-                                <button onClick={() => { handlePrint('pts'); setShowPrintMenu(false); }} className="w-full text-left px-5 py-3.5 rounded-2xl hover:bg-indigo-50 text-slate-700 font-black text-[11px] uppercase tracking-widest flex items-center gap-3 transition-colors group/item">
-                                    <span className="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center text-sm group-hover/item:bg-amber-500 group-hover/item:text-white transition-colors">📝</span>
-                                    Nilai PTS
-                                </button>
-                                <button onClick={() => { handlePrint('pas'); setShowPrintMenu(false); }} className="w-full text-left px-5 py-3.5 rounded-2xl hover:bg-indigo-50 text-slate-700 font-black text-[11px] uppercase tracking-widest flex items-center gap-3 transition-colors group/item">
-                                    <span className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center text-sm group-hover/item:bg-rose-500 group-hover/item:text-white transition-colors">📝</span>
-                                    Nilai PAS
-                                </button>
-                                <div className="border-t border-slate-100 my-2 mx-4"></div>
-                                <button onClick={() => { handlePrint('rekap'); setShowPrintMenu(false); }} className="w-full text-left px-5 py-3.5 rounded-2xl hover:bg-indigo-100/50 text-indigo-700 font-black text-[11px] uppercase tracking-widest flex items-center gap-3 transition-colors group/item">
-                                    <span className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center text-sm group-hover/item:bg-indigo-600 group-hover/item:text-white transition-colors">📊</span>
-                                    Rekap Nilai Akhir
-                                </button>
+                            <div className="absolute left-0 md:left-auto md:right-0 top-full mt-3 w-72 bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-white/40 p-4 z-50 animate-zoomIn origin-top-left md:origin-top-right">
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-4 py-2 opacity-60">Pilih Laporan</div>
+                                <div className="space-y-1">
+                                    {/* Formatif */}
+                                    <div className="flex items-center justify-between px-3 py-1.5 hover:bg-slate-50 rounded-2xl transition-colors">
+                                        <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider pl-2">Formatif</span>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => { handlePrint('formatif'); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="Cetak">🖨️</button>
+                                            <button onClick={() => { handleDownloadPDF('formatif'); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Unduh PDF">📥</button>
+                                        </div>
+                                    </div>
+                                    {/* Sumatif */}
+                                    <div className="flex items-center justify-between px-3 py-1.5 hover:bg-slate-50 rounded-2xl transition-colors">
+                                        <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider pl-2">Sumatif</span>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => { handlePrint('sumatif'); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="Cetak">🖨️</button>
+                                            <button onClick={() => { handleDownloadPDF('sumatif'); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Unduh PDF">📥</button>
+                                        </div>
+                                    </div>
+                                    {/* PTS */}
+                                    <div className="flex items-center justify-between px-3 py-1.5 hover:bg-slate-50 rounded-2xl transition-colors">
+                                        <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider pl-2">Nilai PTS</span>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => { handlePrint('pts'); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="Cetak">🖨️</button>
+                                            <button onClick={() => { handleDownloadPDF('pts'); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Unduh PDF">📥</button>
+                                        </div>
+                                    </div>
+                                    {/* PAS */}
+                                    <div className="flex items-center justify-between px-3 py-1.5 hover:bg-slate-50 rounded-2xl transition-colors">
+                                        <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider pl-2">Nilai PAS</span>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => { handlePrint('pas'); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="Cetak">🖨️</button>
+                                            <button onClick={() => { handleDownloadPDF('pas'); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Unduh PDF">📥</button>
+                                        </div>
+                                    </div>
+                                    <div className="border-t border-slate-100 my-2 mx-2"></div>
+                                    {/* Rekap */}
+                                    <div className="flex items-center justify-between px-3 py-2 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+                                        <span className="text-indigo-700 font-black text-[11px] uppercase tracking-wider pl-2">Rekap Akhir</span>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => { handlePrint('rekap'); }} className="p-2 text-indigo-600 hover:bg-indigo-150/50 rounded-xl transition-all" title="Cetak">🖨️</button>
+                                            <button onClick={() => { handleDownloadPDF('rekap'); }} className="p-2 text-emerald-600 hover:bg-emerald-100/50 rounded-xl transition-all" title="Unduh PDF">📥</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -19,13 +19,7 @@ export default function JournalPage() {
     const classJournals = useMemo(() => (appData || []).filter(d => d.type === 'journal_class').sort((a, b) => new Date(b.date) - new Date(a.date)), [appData]);
     const teacherJournals = useMemo(() => (appData || []).filter(d => d.type === 'journal_teacher').sort((a, b) => new Date(b.date) - new Date(a.date)), [appData]);
 
-    const handlePrintMonthly = (type) => {
-        const journals = type === 'kelas' ? classJournals : teacherJournals;
-        if (journals.length === 0) return alert("Belum ada data untuk dicetak");
-
-        const printWindow = window.open('', '_blank');
-        const monthYear = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-
+    const getJournalHTML = (type, journals, monthYear) => {
         let tableContent = "";
         if (type === 'kelas') {
             tableContent = journals.map(j => `
@@ -89,7 +83,7 @@ export default function JournalPage() {
             `;
         }
 
-        printWindow.document.write(`
+        return `
             <html>
                 <head>
                     <title>Jurnal ${type === 'kelas' ? 'Kelas' : 'Mengajar'} - ${monthYear}</title>
@@ -129,9 +123,57 @@ export default function JournalPage() {
                     <script>window.onload = () => window.print();</script>
                 </body>
             </html>
-        `);
+        `;
+    };
+
+    const handlePrintMonthly = (type) => {
+        const journals = type === 'kelas' ? classJournals : teacherJournals;
+        if (journals.length === 0) return alert("Belum ada data untuk dicetak");
+
+        const monthYear = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        const html = getJournalHTML(type, journals, monthYear);
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert("Pop-up blocked! Please allow pop-ups for this site.");
+            return;
+        }
+
+        printWindow.document.write(html);
         printWindow.document.close();
-    }
+    };
+
+    const handleDownloadMonthlyPDF = async (type) => {
+        const journals = type === 'kelas' ? classJournals : teacherJournals;
+        if (journals.length === 0) return alert("Belum ada data untuk dicetak");
+
+        try {
+            const html2pdf = (await import('html2pdf.js')).default;
+            const monthYear = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+            const html = getJournalHTML(type, journals, monthYear);
+
+            const element = document.createElement('div');
+            element.innerHTML = html;
+            element.style.position = 'absolute';
+            element.style.left = '-9999px';
+            element.style.top = '-9999px';
+            document.body.appendChild(element);
+
+            const opt = {
+                margin: 15,
+                filename: `Jurnal_${type === 'kelas' ? 'Kelas' : 'Mengajar'}_${monthYear.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            await html2pdf().set(opt).from(element).save();
+            document.body.removeChild(element);
+        } catch (e) {
+            console.error("PDF download error:", e);
+            alert("Gagal mengunduh PDF: " + e.message);
+        }
+    };
 
     return (
         <div className="animate-fadeIn pb-10">
@@ -249,9 +291,14 @@ export default function JournalPage() {
                     <div className="space-y-6 animate-slideUp">
                         <div className="flex justify-between items-center px-4">
                             <h3 className="font-bold text-slate-800 text-lg tracking-tight">Daftar Jurnal Kelas</h3>
-                            <button onClick={() => handlePrintMonthly('kelas')} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">
-                                <span>📊</span> CETAK BULANAN
-                            </button>
+                            <div className="flex gap-2">
+                                <button onClick={() => handlePrintMonthly('kelas')} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">
+                                    <span>🖨️</span> CETAK BULANAN
+                                </button>
+                                <button onClick={() => handleDownloadMonthlyPDF('kelas')} className="px-5 py-2.5 bg-white border border-slate-200 text-emerald-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm flex items-center gap-2">
+                                    <span>📥</span> UNDUH PDF
+                                </button>
+                            </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {classJournals.map((j) => (
@@ -290,9 +337,14 @@ export default function JournalPage() {
                     <div className="space-y-6 animate-slideUp">
                         <div className="flex justify-between items-center px-4">
                             <h3 className="font-bold text-slate-800 text-lg tracking-tight">Daftar Jurnal Mengajar</h3>
-                            <button onClick={() => handlePrintMonthly('mengajar')} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">
-                                <span>📊</span> CETAK BULANAN
-                            </button>
+                            <div className="flex gap-2">
+                                <button onClick={() => handlePrintMonthly('mengajar')} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">
+                                    <span>🖨️</span> CETAK BULANAN
+                                </button>
+                                <button onClick={() => handleDownloadMonthlyPDF('mengajar')} className="px-5 py-2.5 bg-white border border-slate-200 text-emerald-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm flex items-center gap-2">
+                                    <span>📥</span> UNDUH PDF
+                                </button>
+                            </div>
                         </div>
                         {teacherJournals.map((j) => (
                             <div key={j.__backendId} className="bg-white p-8 rounded-2xl border border-slate-100 shadow-modern hover:shadow-premium transition-all grid grid-cols-1 lg:grid-cols-4 gap-8 relative group overflow-hidden border-t-4 border-t-teal-500">

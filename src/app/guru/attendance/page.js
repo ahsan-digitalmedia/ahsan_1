@@ -58,13 +58,7 @@ export default function AttendancePage() {
     }, [selectedClass, selectedDate]);
 
     // PRINT LOGIC (LEGACY STYLE)
-    const handlePrint = async (type) => { // type: 'Harian' | 'Mingguan' | 'Bulanan'
-        setShowMenu(false);
-        if (!selectedClass) {
-            alert("Pilih kelas terlebih dahulu");
-            return;
-        }
-
+    const getAttendancePrintHTML = async (type) => {
         // 1. Prepare Date Range
         let startDate, endDate;
         const current = new Date(selectedDate);
@@ -73,7 +67,7 @@ export default function AttendancePage() {
             startDate = selectedDate;
             endDate = selectedDate;
         } else if (type === 'Mingguan') {
-            const day = current.getDay(); // 0 (Sun) - 6 (Sat)
+            const day = current.getDay();
             // Asumsi Senin start (1), Minggu end (0/7)
             // Adjust to make Monday the start
             const diff = current.getDate() - day + (day === 0 ? -6 : 1);
@@ -97,9 +91,8 @@ export default function AttendancePage() {
         try {
             printData = await attendanceOperations.fetchByRange(selectedClass, startDate, endDate, currentUser?.__backendId);
         } catch (e) {
-            alert("Gagal mengambil data untuk cetak");
             console.error(e);
-            return;
+            throw new Error("Gagal mengambil data absensi");
         }
 
         // 3. Generate HTML
@@ -279,21 +272,12 @@ export default function AttendancePage() {
             }).join('');
         }
 
-
-        // 4. Open Window and Write
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            alert("Pop-up blocked! Please allow pop-ups for this site.");
-            return;
-        }
-
-        printWindow.document.write(`
+        return `
             <html>
                 <head>
                     <title>Cetak Absensi - ${schoolName}</title>
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-                        @page { size: portrait; margin: 15mm; }
                         body { font-family: 'Inter', sans-serif; padding: 0; color: #000; font-size: 12px; }
                         .header { text-align: center; margin-bottom: 20px; border-bottom: 3px double #000; padding-bottom: 10px; }
                         .school-name { font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase; }
@@ -307,7 +291,6 @@ export default function AttendancePage() {
                         .sig-box { width: 45%; text-align: center; }
                         .sig-space { height: 60px; }
                         .sig-name { font-weight: bold; text-decoration: underline; }
-                        @media print { .no-print { display: none; } }
                     </style>
                 </head>
                 <body>
@@ -352,14 +335,66 @@ export default function AttendancePage() {
                             <p>NIP. ${currentUser?.nip || '-'}</p>
                         </div>
                     </div>
-
-                    <script>
-                        window.onload = () => { window.print(); };
-                    </script>
                 </body>
             </html>
-        `);
-        printWindow.document.close();
+        `;
+    };
+
+    const handlePrint = async (type) => {
+        setShowMenu(false);
+        if (!selectedClass) {
+            alert("Pilih kelas terlebih dahulu");
+            return;
+        }
+
+        try {
+            const html = await getAttendancePrintHTML(type);
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert("Pop-up diblokir! Harap izinkan pop-up.");
+                return;
+            }
+
+            printWindow.document.write(html);
+            printWindow.document.write('<script>window.onload = () => { window.print(); };</script>');
+            printWindow.document.close();
+        } catch (e) {
+            alert(e.message);
+        }
+    };
+
+    const handleDownloadPDF = async (type) => {
+        setShowMenu(false);
+        if (!selectedClass) {
+            alert("Pilih kelas terlebih dahulu");
+            return;
+        }
+
+        try {
+            const html2pdf = (await import('html2pdf.js')).default;
+            const html = await getAttendancePrintHTML(type);
+
+            const element = document.createElement('div');
+            element.innerHTML = html;
+            element.style.position = 'absolute';
+            element.style.left = '-9999px';
+            element.style.top = '-9999px';
+            document.body.appendChild(element);
+
+            const opt = {
+                margin: 15,
+                filename: `Absensi_${type}_Kelas_${selectedClass}_${selectedDate}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: type === 'Mingguan' ? 'landscape' : 'portrait' }
+            };
+
+            await html2pdf().set(opt).from(element).save();
+            document.body.removeChild(element);
+        } catch (e) {
+            console.error("PDF download error:", e);
+            alert("Gagal mengunduh PDF: " + e.message);
+        }
     };
 
     // Extract unique classes
@@ -512,20 +547,34 @@ export default function AttendancePage() {
                             <span className="text-base group-hover:scale-110 transition-transform">🖨️</span> CETAK
                         </button>
                         {showMenu && (
-                            <div className="absolute left-0 md:left-auto md:right-0 top-full mt-3 w-64 bg-white/90 backdrop-blur-xl rounded-2xl shadow-premium border border-white/40 p-3 z-50 animate-zoomIn origin-top-left md:origin-top-right">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 py-3 opacity-60">Opsi Laporan</div>
-                                <button onClick={() => handlePrint("Harian")} className="w-full text-left px-5 py-3.5 rounded-xl hover:bg-indigo-50 text-slate-700 font-bold text-[11px] uppercase tracking-widest flex items-center gap-3 transition-colors group/item">
-                                    <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center text-sm group-hover/item:bg-blue-500 group-hover/item:text-white transition-colors">📄</span>
-                                    Cetak Harian
-                                </button>
-                                <button onClick={() => handlePrint("Mingguan")} className="w-full text-left px-5 py-3.5 rounded-xl hover:bg-indigo-50 text-slate-700 font-bold text-[11px] uppercase tracking-widest flex items-center gap-3 transition-colors group/item">
-                                    <span className="w-8 h-8 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center text-sm group-hover/item:bg-purple-500 group-hover/item:text-white transition-colors">📑</span>
-                                    Cetak Mingguan
-                                </button>
-                                <button onClick={() => handlePrint("Bulanan")} className="w-full text-left px-5 py-3.5 rounded-xl hover:bg-indigo-50 text-slate-700 font-bold text-[11px] uppercase tracking-widest flex items-center gap-3 transition-colors group/item">
-                                    <span className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center text-sm group-hover/item:bg-orange-500 group-hover/item:text-white transition-colors">📊</span>
-                                    Cetak Bulanan
-                                </button>
+                            <div className="absolute left-0 md:left-auto md:right-0 top-full mt-3 w-72 bg-white/90 backdrop-blur-xl rounded-2xl shadow-premium border border-white/40 p-4 z-50 animate-zoomIn origin-top-left md:origin-top-right">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 py-2 opacity-60">Opsi Laporan</div>
+                                <div className="space-y-1">
+                                    {/* Harian */}
+                                    <div className="flex items-center justify-between px-3 py-1.5 hover:bg-slate-50 rounded-xl transition-colors">
+                                        <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider pl-2">Harian</span>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => { handlePrint('Harian'); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Cetak">🖨️</button>
+                                            <button onClick={() => { handleDownloadPDF('Harian'); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Unduh PDF">📥</button>
+                                        </div>
+                                    </div>
+                                    {/* Mingguan */}
+                                    <div className="flex items-center justify-between px-3 py-1.5 hover:bg-slate-50 rounded-xl transition-colors">
+                                        <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider pl-2">Mingguan</span>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => { handlePrint('Mingguan'); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Cetak">🖨️</button>
+                                            <button onClick={() => { handleDownloadPDF('Mingguan'); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Unduh PDF">📥</button>
+                                        </div>
+                                    </div>
+                                    {/* Bulanan */}
+                                    <div className="flex items-center justify-between px-3 py-1.5 hover:bg-slate-50 rounded-xl transition-colors">
+                                        <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider pl-2">Bulanan</span>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => { handlePrint('Bulanan'); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Cetak">🖨️</button>
+                                            <button onClick={() => { handleDownloadPDF('Bulanan'); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Unduh PDF">📥</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
