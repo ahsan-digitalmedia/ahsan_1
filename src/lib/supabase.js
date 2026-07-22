@@ -163,9 +163,10 @@ export const studentOperations = {
     async batchUpsert(students) {
         if (!students || students.length === 0) return;
 
+        // Use insert instead of upsert to avoid 'unique constraint' missing errors
         const { data, error } = await supabase
             .from('students')
-            .upsert(students, { onConflict: 'nisn' }) // Assuming NISN is unique enough or use something else
+            .insert(students)
             .select();
 
         if (error) throw error;
