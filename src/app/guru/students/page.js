@@ -126,8 +126,7 @@ export default function GuruStudentsPage() {
                 });
                 return {
                     ...obj,
-                    teacher_id: currentUser?.id,
-                    type: 'student'
+                    teacher_id: currentUser?.__backendId,
                 };
             }).filter(r => r.name); // Basic validation
 
