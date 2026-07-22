@@ -112,7 +112,17 @@ export default function GuruStudentsPage() {
                     if (header === "kelas") obj.class = values[i];
                     if (header === "l/p") obj.gender = values[i];
                     if (header === "tempat lahir") obj.birth_place = values[i];
-                    if (header === "tanggal lahir") obj.birth_date = values[i];
+                    if (header === "tanggal lahir") {
+                        let dateStr = values[i];
+                        if (dateStr) {
+                            // Convert DD/MM/YYYY or DD-MM-YYYY to YYYY-MM-DD
+                            const match = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+                            if (match) {
+                                dateStr = `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
+                            }
+                        }
+                        obj.birth_date = dateStr;
+                    }
                 });
                 return {
                     ...obj,
