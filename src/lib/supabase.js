@@ -163,10 +163,13 @@ export const studentOperations = {
     async batchUpsert(students) {
         if (!students || students.length === 0) return;
 
+        // Strip out the 'type' field which is internal but not in database schema
+        const payload = students.map(({ type, ...rest }) => rest);
+
         // Use insert instead of upsert to avoid 'unique constraint' missing errors
         const { data, error } = await supabase
             .from('students')
-            .insert(students)
+            .insert(payload)
             .select();
 
         if (error) throw error;
