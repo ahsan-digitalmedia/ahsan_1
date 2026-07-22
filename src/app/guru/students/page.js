@@ -128,7 +128,7 @@ export default function GuruStudentsPage() {
                 window.location.reload();
             } catch (err) {
                 console.error("Import error:", err);
-                alert("Gagal mengimpor data. Pastikan format CSV benar.");
+                alert("Gagal mengimpor data: " + (err.message || 'Pastikan format CSV benar.'));
             } finally {
                 setIsImporting(false);
                 e.target.value = ''; // Reset input
