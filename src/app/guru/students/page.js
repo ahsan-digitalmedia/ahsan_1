@@ -36,6 +36,22 @@ export default function GuruStudentsPage() {
         });
     };
 
+    const handleDownloadTemplate = () => {
+        const headers = ["Nama", "NIS", "NISN", "Kelas", "L/P", "Tempat Lahir", "Tanggal Lahir"];
+        const dummyRow = ["Budi Santoso", "12345", "0012345678", "10A", "L", "Jakarta", "2008-05-15"];
+
+        const csvContent = "sep=;\n" + [headers, dummyRow].map(e => e.join(";")).join("\n");
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "Template_Data_Siswa.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const handleExportCSV = () => {
         const headers = ["Nama", "NIS", "NISN", "Kelas", "L/P", "Tempat Lahir", "Tanggal Lahir"];
         const rows = filtered.map(s => [
@@ -137,6 +153,15 @@ export default function GuruStudentsPage() {
                         accept=".csv"
                         className="hidden"
                     />
+
+                    <button
+                        onClick={handleDownloadTemplate}
+                        className="flex-1 md:flex-none px-6 py-3 bg-white border border-slate-200 text-slate-500 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-sm hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 group"
+                        title="Unduh Template CSV"
+                    >
+                        <span className="text-base group-hover:scale-110 transition-transform">📄</span>
+                        TEMPLATE
+                    </button>
 
                     <button
                         onClick={() => fileInputRef.current.click()}
