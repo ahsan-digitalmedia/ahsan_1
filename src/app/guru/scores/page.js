@@ -65,7 +65,11 @@ export default function ScoresPage() {
                 const map = {};
                 if (data) {
                     data.forEach(record => {
-                        map[record.student_id] = record;
+                        if (record.scores && typeof record.scores === 'object') {
+                            map[record.student_id] = { ...record.scores, id: record.id, na: record.na };
+                        } else {
+                            map[record.student_id] = record;
+                        }
                     });
                 }
                 setScores(map);
@@ -73,11 +77,12 @@ export default function ScoresPage() {
                 // If there's data, sync config from the first record if possible
                 if (data && data.length > 0) {
                     const first = data[0];
-                    if (first.weight_fs) {
+                    const sData = first.scores || first;
+                    if (sData.weight_fs) {
                         setWeights({
-                            fs: first.weight_fs,
-                            pts: first.weight_pts,
-                            pas: first.weight_pas
+                            fs: sData.weight_fs,
+                            pts: sData.weight_pts,
+                            pas: sData.weight_pas
                         });
                     }
                 }
@@ -137,7 +142,8 @@ export default function ScoresPage() {
 
     const handleSave = async () => {
         if (!selectedClass || !selectedSubject) {
-            alert("Pilih kelas dan mata pelajaran!");
+            if (showToast) showToast("Silakan pilih kelas dan mata pelajaran terlebih dahulu!", "error", "⚠️");
+            else alert("Pilih kelas dan mata pelajaran!");
             return;
         }
         setIsSaving(true);
@@ -163,10 +169,13 @@ export default function ScoresPage() {
             });
 
             await scoreOperations.upsert(recordsToSave);
-            alert("Data nilai berhasil disimpan! ✅");
+            if (state.processData) await state.processData('score_saved');
+            if (showToast) showToast("Data nilai berhasil disimpan!", "success", "✅", "Berhasil Disimpan!");
+            else alert("Data nilai berhasil disimpan! ✅");
         } catch (error) {
             console.error("Error saving scores:", error);
-            alert("Gagal menyimpan data.");
+            if (showToast) showToast(`Gagal menyimpan data: ${error.message || 'Periksa koneksi/input.'}`, "error", "⚠️");
+            else alert("Gagal menyimpan data.");
         } finally {
             setIsSaving(false);
         }

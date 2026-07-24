@@ -580,31 +580,268 @@ export const scoreOperations = {
     },
 
     async fetchByClassAndSubject(className, subject, teacherId = null) {
-        let query = supabase
-            .from('scores')
-            .select('*')
-            .eq('class', className)
-            .eq('subject', subject);
+        let scoresData = [];
 
-        if (teacherId) {
-            query = query.eq('teacher_id', teacherId);
+        let authUid = null;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            authUid = user?.id;
+        } catch (e) { }
+
+        const teacherIds = Array.from(new Set([teacherId, authUid].filter(id => id && id !== 'undefined')));
+
+        // 1. Query 'scores' table
+        try {
+            let query = supabase
+                .from('scores')
+                .select('*')
+                .eq('class', className)
+                .eq('subject', subject);
+
+            if (teacherIds.length > 0) {
+                const orCond = teacherIds.map(id => `teacher_id.eq.${id}`).join(',');
+                query = query.or(orCond);
+            }
+
+            const { data, error } = await query;
+            if (!error && data) {
+                scoresData = [...data];
+            }
+        } catch (e) {
+            console.warn("fetchByClassAndSubject scores table query error:", e);
         }
 
-        const { data, error } = await query;
+        // 2. Query 'app_data' table (type: 'scores')
+        try {
+            let query = supabase
+                .from('app_data')
+                .select('*')
+                .eq('type', 'scores');
 
-        if (error) throw error;
-        return data; // Returns array of score records
+            if (teacherIds.length > 0) {
+                const authCond = teacherIds.map(id => `auth_id.eq.${id}`).join(',');
+                const teachCond = teacherIds.map(id => `content->>teacher_id.eq.${id}`).join(',');
+                query = query.or(`${authCond},${teachCond}`);
+            }
+
+            const { data: appData } = await query;
+            if (appData && appData.length > 0) {
+                appData.forEach(d => {
+                    const content = d.content || {};
+                    if (String(content.class).trim() === String(className).trim() &&
+                        String(content.subject).trim() === String(subject).trim()) {
+                        scoresData.push({ ...content, __backendId: d.id });
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn("fetchByClassAndSubject app_data table query error:", e);
+        }
+
+        return scoresData;
     },
 
     async upsert(scoreRecords) {
         if (!scoreRecords || scoreRecords.length === 0) return;
 
-        const { data, error } = await supabase
-            .from('scores')
-            .upsert(scoreRecords, { onConflict: 'student_id, subject, academic_year, semester' })
-            .select();
+        // 1. Dynamic teacher_id resolution
+        let authUid = null;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            authUid = user?.id;
+        } catch (e) {
+            console.warn("Auth user fetch warning in scoreOperations.upsert:", e);
+        }
 
-        if (error) throw error;
-        return data;
+        // 2. Probe existing scores table schema keys if data exists
+        let knownSchemaKeys = null;
+        try {
+            const { data: probeRows } = await supabase.from('scores').select('*').limit(1);
+            if (probeRows && probeRows.length > 0) {
+                knownSchemaKeys = new Set(Object.keys(probeRows[0]));
+            }
+        } catch (e) {
+            console.warn("Scores table schema probe warning:", e);
+        }
+
+        // Helper to generate score object
+        const getScoreMap = (raw) => {
+            const map = {};
+            const keys = [
+                'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10',
+                's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10',
+                'pts', 'pas', 'avg_f', 'avg_s', 'na', 'weight_fs', 'weight_pts', 'weight_pas'
+            ];
+            keys.forEach(k => {
+                if (raw[k] !== undefined && raw[k] !== null) {
+                    const p = parseFloat(raw[k]);
+                    map[k] = isNaN(p) ? 0 : p;
+                }
+            });
+            return map;
+        };
+
+        // Format candidate payloads
+        const buildCandidates = (rec) => {
+            const raw = { ...rec };
+            if (authUid && (!raw.teacher_id || raw.teacher_id === 'undefined')) {
+                raw.teacher_id = authUid;
+            }
+
+            const base = {
+                student_id: raw.student_id,
+                teacher_id: raw.teacher_id,
+                class: raw.class,
+                subject: raw.subject,
+                academic_year: raw.academic_year || "2024/2025",
+                semester: raw.semester || "1"
+            };
+            if (raw.id) base.id = raw.id;
+
+            const scoreMap = getScoreMap(raw);
+
+            // If we already know the exact schema keys from probing
+            if (knownSchemaKeys) {
+                const clean = { ...base };
+                Object.keys(raw).forEach(k => {
+                    if (knownSchemaKeys.has(k)) {
+                        clean[k] = raw[k];
+                    }
+                });
+                if (knownSchemaKeys.has('scores')) clean.scores = scoreMap;
+                if (knownSchemaKeys.has('data')) clean.data = scoreMap;
+                if (knownSchemaKeys.has('score')) clean.score = scoreMap;
+                if (knownSchemaKeys.has('nilai')) clean.nilai = scoreMap;
+                if (knownSchemaKeys.has('na')) clean.na = scoreMap.na || 0;
+                return [clean];
+            }
+
+            return [
+                { ...base, scores: scoreMap },
+                { ...base, data: scoreMap },
+                { ...base, score: scoreMap },
+                { ...base, nilai: scoreMap },
+                { ...base, ...scoreMap }
+            ];
+        };
+
+        // 3. Fetch existing score IDs for matching
+        const sample = scoreRecords[0];
+        const studentIds = scoreRecords.map(r => r.student_id).filter(Boolean);
+        let existingScores = [];
+        if (studentIds.length > 0 && sample?.subject) {
+            try {
+                const { data } = await supabase
+                    .from('scores')
+                    .select('id, student_id, subject, academic_year, semester')
+                    .in('student_id', studentIds)
+                    .eq('subject', sample.subject);
+                existingScores = data || [];
+            } catch (e) {
+                console.warn("Error fetching existing scores:", e);
+            }
+        }
+
+        // 4. Process all records in parallel with candidate format caching for maximum speed
+        let workingCandidateIndex = null;
+
+        const saveSingleRecord = async (rawRecord) => {
+            const existing = existingScores?.find(e =>
+                String(e.student_id) === String(rawRecord.student_id) &&
+                String(e.subject).trim() === String(rawRecord.subject).trim()
+            );
+
+            const recToSave = existing ? { ...rawRecord, id: existing.id } : rawRecord;
+            const candidates = buildCandidates(recToSave);
+
+            const candidateOrder = workingCandidateIndex !== null ?
+                [candidates[workingCandidateIndex], ...candidates.filter((_, idx) => idx !== workingCandidateIndex)] :
+                candidates;
+
+            for (const candidate of candidateOrder) {
+                if (!candidate) continue;
+
+                if (existing?.id) {
+                    const { id, ...updateFields } = candidate;
+                    const { data: upData, error: upErr } = await supabase
+                        .from('scores')
+                        .update(updateFields)
+                        .eq('id', existing.id)
+                        .select();
+                    if (!upErr && upData && upData.length > 0) {
+                        if (workingCandidateIndex === null) {
+                            const originalIdx = candidates.indexOf(candidate);
+                            if (originalIdx !== -1) workingCandidateIndex = originalIdx;
+                        }
+                        return upData[0];
+                    }
+                } else {
+                    const { id, ...insertFields } = candidate;
+                    const { data: insData, error: insErr } = await supabase
+                        .from('scores')
+                        .insert(insertFields)
+                        .select();
+                    if (!insErr && insData && insData.length > 0) {
+                        if (workingCandidateIndex === null) {
+                            const originalIdx = candidates.indexOf(candidate);
+                            if (originalIdx !== -1) workingCandidateIndex = originalIdx;
+                        }
+                        return insData[0];
+                    }
+                }
+            }
+
+            // Ultimate Fallback: Save to universal app_data table (type: 'scores')
+            try {
+                const scoreMap = getScoreMap(rawRecord);
+                const appDataRecord = {
+                    type: 'scores',
+                    auth_id: authUid,
+                    content: {
+                        student_id: rawRecord.student_id,
+                        teacher_id: rawRecord.teacher_id || authUid,
+                        class: rawRecord.class,
+                        subject: rawRecord.subject,
+                        academic_year: rawRecord.academic_year || "2024/2025",
+                        semester: rawRecord.semester || "1",
+                        ...scoreMap
+                    }
+                };
+
+                const { data: existingApp } = await supabase
+                    .from('app_data')
+                    .select('id')
+                    .eq('type', 'scores')
+                    .filter('content->>student_id', 'eq', String(rawRecord.student_id))
+                    .filter('content->>subject', 'eq', String(rawRecord.subject))
+                    .maybeSingle();
+
+                if (existingApp?.id) {
+                    const { data: upApp, error: upAppErr } = await supabase
+                        .from('app_data')
+                        .update(appDataRecord)
+                        .eq('id', existingApp.id)
+                        .select();
+                    if (!upAppErr && upApp) {
+                        return appDataRecord.content;
+                    }
+                } else {
+                    const { data: insApp, error: insAppErr } = await supabase
+                        .from('app_data')
+                        .insert([appDataRecord])
+                        .select();
+                    if (!insAppErr && insApp) {
+                        return appDataRecord.content;
+                    }
+                }
+            } catch (appErr) {
+                console.error("app_data fallback score save error:", appErr);
+            }
+
+            return null;
+        };
+
+        const results = await Promise.all(scoreRecords.map(saveSingleRecord));
+        return results.filter(Boolean);
     }
 };
