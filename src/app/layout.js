@@ -45,6 +45,15 @@ export const metadata = {
         description: 'Inovasi Digital untuk Guru Indonesia.',
         images: ['/og-image.png'],
     },
+    manifest: '/manifest.json',
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: 'default',
+        title: 'Portal Guru',
+    },
+    formatDetection: {
+        telephone: false,
+    },
 };
 
 export const viewport = {
@@ -52,6 +61,7 @@ export const viewport = {
     initialScale: 1,
     maximumScale: 5,
     userScalable: true,
+    themeColor: '#4f46e5',
 };
 
 export default function RootLayout({ children }) {

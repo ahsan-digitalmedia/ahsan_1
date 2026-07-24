@@ -70,6 +70,26 @@
   header * {
     font-size: 0.85em;
   }
+
+  /* Universal Hover & Active (Click) Effects */
+  button, 
+  .btn-primary, 
+  [role="button"], 
+  a {
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, background-color 0.2s ease-in-out !important;
+  }
+  
+  button:hover:not(:disabled), 
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  button:active:not(:disabled), 
+  .btn-primary:active:not(:disabled), 
+  a:active {
+    transform: scale(0.95) !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  }
 }
 
 @layer base {

@@ -35,13 +35,37 @@ export function AppProvider({ children }) {
         scoreTPCount: 4,
         scoreSumatifCount: 4,
         scoreWeights: { fs: 80, pts: 10, pas: 10 },
+        toast: { show: false, message: "", type: "success", title: "", icon: null },
     });
 
     const isProcessing = React.useRef(false);
+    const toastTimeoutRef = React.useRef(null);
 
     const updateState = (updates) => {
         setState((prev) => ({ ...prev, ...updates }));
     };
+
+    const showToast = useCallback((message, type = "success", icon = null, title = null, duration = 3500) => {
+        if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+
+        setState((prev) => ({
+            ...prev,
+            toast: {
+                show: true,
+                message,
+                type,
+                title: title || (type === "error" ? "Gagal!" : type === "logout" ? "Sampai Jumpa!" : "Berhasil!"),
+                icon,
+            }
+        }));
+
+        toastTimeoutRef.current = setTimeout(() => {
+            setState((prev) => ({
+                ...prev,
+                toast: { ...prev.toast, show: false }
+            }));
+        }, duration);
+    }, []);
 
     const processData = useCallback(async (triggeredBy = 'initial') => {
         if (isProcessing.current) {
@@ -276,7 +300,7 @@ export function AppProvider({ children }) {
 
 
     return (
-        <AppContext.Provider value={{ state, updateState, processData }}>
+        <AppContext.Provider value={{ state, updateState, processData, showToast }}>
             {children}
         </AppContext.Provider>
     );

@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { supabaseData, studentOperations } from "@/lib/supabase";
 
 export default function StudentModal() {
-    const { state, updateState, processData } = useApp();
+    const { state, updateState, processData, showToast } = useApp();
     const { editingItem, modalMode } = state;
 
     const [formData, setFormData] = useState({
@@ -42,31 +42,50 @@ export default function StudentModal() {
 
             // If new student, valid teacherId is mandatory for isolation
             if (modalMode !== 'edit' && !teacherId) {
-                alert("Error: Identitas Guru tidak ditemukan. Silakan refresh halaman.");
+                if (showToast) showToast("Identitas Guru tidak ditemukan. Silakan refresh halaman.", "error", "⚠️");
+                else alert("Error: Identitas Guru tidak ditemukan. Silakan refresh halaman.");
                 setIsSubmitting(false);
                 return;
             }
 
+            const name = formData.name ? formData.name.trim() : "";
+            const nis = formData.nis ? formData.nis.trim() : null;
+            const nisn = formData.nisn ? formData.nisn.trim() : null;
+            const birth_place = formData.birth_place ? formData.birth_place.trim() : null;
+            const birth_date = formData.birth_date ? formData.birth_date.trim() : null;
+            const studentClass = formData.class ? formData.class.trim() : "1A";
+
             const payload = {
                 ...formData,
+                name,
+                nis: nis === "" ? null : nis,
+                nisn: nisn === "" ? null : nisn,
+                class: studentClass,
+                birth_place: birth_place === "" ? null : birth_place,
+                birth_date: birth_date === "" ? null : birth_date,
                 teacher_id: teacherId // Force overwrite/ensure it's present
             };
 
             if (modalMode === 'edit' && editingItem) {
-                // Keep existing teacher_id if we are editing (unless we want to transfer?)
-                // Usually editing shouldn't change ownership implicitly, but let's be safe.
-                // If editingItem has teacher_id, keep it. If not, maybe assign?
-                // For simplified logic: ensure the student belongs to current user.
-
                 await studentOperations.update(editingItem.id, payload);
+                if (showToast) showToast(`Data siswa "${name}" berhasil diperbarui!`, "success", "👤", "Berhasil Diperbarui!");
             } else {
                 await studentOperations.create(payload);
+                if (showToast) showToast(`Siswa baru "${name}" berhasil ditambahkan!`, "success", "🎉", "Berhasil Ditambahkan!");
             }
             await processData(); // Refresh list
             updateState({ showModal: false, editingItem: null });
         } catch (error) {
             console.error("Save error:", error);
-            alert("Gagal menyimpan data siswa");
+            let errMsg = error.message || "Gagal menyimpan data siswa";
+            if (errMsg.includes('students_nisn_key') || errMsg.includes('unique constraint')) {
+                errMsg = `NISN "${formData.nisn}" sudah terdaftar untuk siswa lain.`;
+            }
+            if (showToast) {
+                showToast(errMsg, "error", "⚠️", "Gagal Menyimpan");
+            } else {
+                alert(errMsg);
+            }
         } finally {
             setIsSubmitting(false);
         }

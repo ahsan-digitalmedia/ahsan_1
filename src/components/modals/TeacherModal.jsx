@@ -6,8 +6,8 @@ import { supabaseData } from "@/lib/supabase";
 import { cn, SUBJECT_LIST, normalizeSubject, splitSubjects, joinSubjects } from "@/lib/utils";
 
 export default function TeacherModal() {
-    const { state, updateState } = useApp();
-    const { editingItem, modalMode } = state;
+    const { state, updateState, showToast } = useApp();
+    const { editingItem, modalMode, config } = state;
 
     const [formData, setFormData] = useState({
         name: "",
@@ -93,13 +93,16 @@ export default function TeacherModal() {
 
             if (modalMode === "edit" && editingItem) {
                 await supabaseData.update(editingItem.__backendId, payload);
+                if (showToast) showToast(`Profil guru "${formData.name}" berhasil diperbarui!`, "success", "👨‍🏫", "Berhasil Diperbarui!");
             } else {
                 await supabaseData.create(payload);
+                if (showToast) showToast(`Guru baru "${formData.name}" berhasil ditambahkan!`, "success", "🎉", "Berhasil Ditambahkan!");
             }
             updateState({ showModal: false, editingItem: null });
         } catch (error) {
             console.error("Error saving teacher:", error);
-            alert("Gagal menyimpan data guru");
+            if (showToast) showToast("Gagal menyimpan data guru.", "error", "⚠️");
+            else alert("Gagal menyimpan data guru");
         } finally {
             setIsSubmitting(false);
         }
@@ -197,7 +200,7 @@ export default function TeacherModal() {
                                     value=""
                                 >
                                     <option value="">+ Tambah Mata Pelajaran...</option>
-                                    {SUBJECT_LIST.map(s => (
+                                    {(config?.custom_subjects || SUBJECT_LIST).map(s => (
                                         <option key={s} value={s}>{s}</option>
                                     ))}
                                 </select>

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import AdminModalManager from "@/components/admin/AdminModalManager";
 
 export default function AdminLayout({ children }) {
-    const { state, updateState } = useApp();
+    const { state, updateState, showToast } = useApp();
     const { currentUser } = state;
     const pathname = usePathname();
     const router = useRouter();
@@ -47,13 +47,18 @@ export default function AdminLayout({ children }) {
     if (!currentUser) return null;
 
     const handleLogout = async () => {
+        if (showToast) {
+            showToast("Anda telah berhasil keluar dari akun Admin.", "logout", "👋", "Berhasil Logout!", 3000);
+        }
         await supabase.auth.signOut();
         updateState({
             isLoggedIn: false,
             currentUser: null,
             currentUserType: null,
         });
-        router.replace("/");
+        setTimeout(() => {
+            router.replace("/");
+        }, 700);
     };
 
     const navItems = [

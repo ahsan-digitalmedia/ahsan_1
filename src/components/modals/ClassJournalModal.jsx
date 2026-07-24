@@ -6,7 +6,7 @@ import { supabaseData, attendanceOperations } from "@/lib/supabase";
 import { normalizeSubject } from "@/lib/utils";
 
 export default function ClassJournalModal() {
-    const { state, updateState, processData } = useApp();
+    const { state, updateState, processData, showToast } = useApp();
     const { editingItem, modalMode, currentUser } = state;
 
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -85,7 +85,11 @@ export default function ClassJournalModal() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedClass) return alert("Pilih kelas terlebih dahulu");
+        if (!selectedClass) {
+            if (showToast) showToast("Pilih kelas terlebih dahulu", "error", "⚠️");
+            else alert("Pilih kelas terlebih dahulu");
+            return;
+        }
 
         setIsSubmitting(true);
         try {
@@ -98,14 +102,17 @@ export default function ClassJournalModal() {
             };
             if (modalMode === 'edit' && editingItem) {
                 await supabaseData.update(editingItem.__backendId, payload);
+                if (showToast) showToast("Jurnal kelas berhasil diperbarui!", "success", "📓", "Berhasil Diperbarui!");
             } else {
                 await supabaseData.create(payload);
+                if (showToast) showToast("Jurnal kelas berhasil diarsipkan!", "success", "🎉", "Berhasil Diarsipkan!");
             }
             await processData();
             updateState({ showModal: false, editingItem: null });
         } catch (error) {
             console.error("Save class journal error:", error);
-            alert("Gagal menyimpan jurnal kelas");
+            if (showToast) showToast("Gagal menyimpan jurnal kelas.", "error", "⚠️");
+            else alert("Gagal menyimpan jurnal kelas");
         } finally {
             setIsSubmitting(false);
         }

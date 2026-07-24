@@ -8,8 +8,8 @@ import { SUBJECT_LIST, CLASS_LIST, normalizeSubject, normalizeSubjectList } from
 const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 export default function ScheduleModal() {
-    const { state, updateState, processData } = useApp();
-    const { editingItem, modalMode, currentUser } = state;
+    const { state, updateState, processData, showToast } = useApp();
+    const { editingItem, modalMode, currentUser, config } = state;
     const [formData, setFormData] = useState({
         day: "Senin",
         no: "1",
@@ -24,7 +24,8 @@ export default function ScheduleModal() {
     // Filter subjects and classes based on user profile
     const profileSubjects = useMemo(() => currentUser?.subject ? normalizeSubjectList(currentUser.subject) : [], [currentUser?.subject]);
     const isClassTeacher = profileSubjects.includes("Guru Kelas") || profileSubjects.length === 0;
-    const subjectsToDisplay = isClassTeacher ? SUBJECT_LIST : profileSubjects;
+    const dynamicSubjectList = config?.custom_subjects || SUBJECT_LIST;
+    const subjectsToDisplay = isClassTeacher ? dynamicSubjectList : profileSubjects;
 
     const profileClasses = useMemo(() => currentUser?.class ? currentUser.class.split(',').map(c => c.trim()) : [], [currentUser?.class]);
 
@@ -53,14 +54,17 @@ export default function ScheduleModal() {
             };
             if (modalMode === 'edit' && editingItem) {
                 await supabaseData.update(editingItem.__backendId, payload);
+                if (showToast) showToast("Jadwal mengajar berhasil diperbarui!", "success", "📅", "Berhasil Diperbarui!");
             } else {
                 await supabaseData.create(payload);
+                if (showToast) showToast("Jadwal mengajar baru berhasil ditambahkan!", "success", "🎉", "Berhasil Ditambahkan!");
             }
             await processData();
             updateState({ showModal: false, editingItem: null });
         } catch (error) {
             console.error("Save schedule error:", error);
-            alert("Gagal menyimpan jadwal");
+            if (showToast) showToast("Gagal menyimpan jadwal mengajar.", "error", "⚠️");
+            else alert("Gagal menyimpan jadwal");
         } finally {
             setIsSubmitting(false);
         }

@@ -17,6 +17,7 @@ import ScheduleModal from "./modals/ScheduleModal";
 import ClassJournalModal from "./modals/ClassJournalModal";
 import TeacherJournalModal from "./modals/TeacherJournalModal";
 import TeacherModal from "./modals/TeacherModal";
+import ToastNotification from "./ui/ToastNotification";
 
 export default function ModalManager() {
     const { state } = useApp();
@@ -24,6 +25,8 @@ export default function ModalManager() {
 
     return (
         <>
+            <ToastNotification />
+
             {showModal && (
                 <>
                     {modalType === "student" && <StudentModal />}

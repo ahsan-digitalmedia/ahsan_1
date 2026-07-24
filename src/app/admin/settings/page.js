@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { supabaseData } from "@/lib/supabase";
-import { cn } from "@/lib/utils";
+import { cn, SUBJECT_LIST } from "@/lib/utils";
 
 export default function AdminSettingsPage() {
     const { state, updateState } = useApp();
@@ -16,7 +16,10 @@ export default function AdminSettingsPage() {
         admin_contact: config?.admin_contact || "6285268474347",
         academic_year: config?.academic_year || "2024/2025",
         semester: config?.semester || "Ganjil",
+        custom_subjects: config?.custom_subjects || [...SUBJECT_LIST],
     });
+
+    const [newSubject, setNewSubject] = useState("");
 
     const [isSaving, setIsSaving] = useState(false);
 
@@ -29,6 +32,7 @@ export default function AdminSettingsPage() {
                 admin_contact: config.admin_contact || "6285268474347",
                 academic_year: config.academic_year || "2024/2025",
                 semester: config.semester || "Ganjil",
+                custom_subjects: config.custom_subjects || [...SUBJECT_LIST],
             });
         }
     }, [config]);
@@ -46,6 +50,23 @@ export default function AdminSettingsPage() {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleAddSubject = () => {
+        if (newSubject.trim() && !schoolData.custom_subjects.includes(newSubject.trim())) {
+            setSchoolData({
+                ...schoolData,
+                custom_subjects: [...schoolData.custom_subjects, newSubject.trim()]
+            });
+            setNewSubject("");
+        }
+    };
+
+    const handleRemoveSubject = (subjectToRemove) => {
+        setSchoolData({
+            ...schoolData,
+            custom_subjects: schoolData.custom_subjects.filter(s => s !== subjectToRemove)
+        });
     };
 
     return (
@@ -117,6 +138,45 @@ export default function AdminSettingsPage() {
                                     <option value="Genap">SEMESTER GENAP</option>
                                 </select>
                             </FormGroup>
+                        </div>
+                    </section>
+
+                    {/* Subject Management Section */}
+                    <section className="bg-white rounded-2xl shadow-modern border border-slate-100 overflow-hidden group transition-all">
+                        <div className="p-7 border-b border-slate-50 flex items-center gap-4 bg-slate-50/30">
+                            <div className="w-10 h-10 gradient-blue p-2 rounded-xl flex items-center justify-center text-white text-lg shadow-sm group-hover:scale-105 transition-transform" style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}>📚</div>
+                            <div>
+                                <h3 className="font-bold text-slate-800 tracking-tight">Manajemen Mata Pelajaran</h3>
+                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Daftar Pilihan Mapel</p>
+                            </div>
+                        </div>
+                        <div className="p-7 space-y-6">
+                            <div className="flex gap-3">
+                                <input
+                                    type="text"
+                                    value={newSubject}
+                                    onChange={e => setNewSubject(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddSubject())}
+                                    className="input-modern flex-1"
+                                    placeholder="Mata Pelajaran Baru..."
+                                />
+                                <button type="button" onClick={handleAddSubject} className="px-6 py-3 gradient-blue text-white rounded-xl font-bold text-xs shadow-md uppercase tracking-widest hover:scale-105 transition-all">
+                                    Tambah
+                                </button>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2.5 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 max-h-[300px] overflow-y-auto">
+                                {schoolData.custom_subjects?.map(s => (
+                                    <div key={s} className="pl-4 pr-2.5 py-2 bg-white border border-emerald-100 text-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 shadow-sm group">
+                                        {s}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveSubject(s)}
+                                            className="w-5 h-5 rounded-lg bg-emerald-50 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all font-black"
+                                        >✕</button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </section>
 

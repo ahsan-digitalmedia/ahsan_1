@@ -7,7 +7,7 @@ import { SUBJECT_LIST, splitSubjects, joinSubjects } from "@/lib/utils";
 
 export default function ProfileModal() {
     const { state, updateState, processData } = useApp();
-    const { editingItem } = state;
+    const { editingItem, config } = state;
     const [formData, setFormData] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,7 +99,7 @@ export default function ProfileModal() {
                                             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.25rem center', backgroundSize: '1rem' }}
                                         >
                                             <option value="">-- PILIH MATA PELAJARAN --</option>
-                                            {SUBJECT_LIST.map(opt => <option key={opt} value={opt}>{opt.toUpperCase()}</option>)}
+                                            {(config?.custom_subjects || SUBJECT_LIST).map(opt => <option key={opt} value={opt}>{opt.toUpperCase()}</option>)}
                                         </select>
                                     </div>
                                     <button

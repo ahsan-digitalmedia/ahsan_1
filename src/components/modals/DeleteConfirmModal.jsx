@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { supabaseData, studentOperations } from "@/lib/supabase";
 
 export default function DeleteConfirmModal() {
-    const { state, updateState, processData } = useApp();
+    const { state, updateState, processData, showToast } = useApp();
     const { deletingItem } = state;
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -14,18 +14,41 @@ export default function DeleteConfirmModal() {
     const handleDelete = async () => {
         setIsDeleting(true);
         try {
+            const targetId = deletingItem.__backendId || deletingItem.id;
+            const itemName = deletingItem.name || deletingItem.title || 'Item';
+            if (!targetId) {
+                if (showToast) showToast("Gagal menghapus: ID item tidak ditemukan.", "error", "⚠️");
+                else alert("Gagal menghapus: ID item tidak ditemukan.");
+                return;
+            }
+
             if (deletingItem.type === 'student') {
-                await studentOperations.delete(deletingItem.__backendId);
+                await studentOperations.delete(targetId);
             } else {
-                await supabaseData.delete(deletingItem.__backendId);
+                await supabaseData.delete(targetId);
             }
             // Refresh data
             await processData();
             // Close modal
             updateState({ showDeleteConfirm: false, deletingItem: null });
+
+            // Show bouncing success toast
+            if (showToast) {
+                showToast(`"${itemName}" berhasil dihapus!`, "success", "🗑️", "Berhasil Dihapus!");
+            }
         } catch (error) {
             console.error("Delete failed:", error);
-            alert("Gagal menghapus item.");
+            let errMsg = error.message || "Terjadi kesalahan saat menghapus data.";
+            if (errMsg.includes('foreign key constraint') || errMsg.includes('violates foreign key constraint')) {
+                errMsg = "Data ini terhubung dengan catatan absensi atau nilai di database.";
+            } else if (errMsg.includes('row-level security') || errMsg.includes('RLS') || errMsg.includes('violates row-level security policy')) {
+                errMsg = "Akses ditolak oleh kebijakan keamanan database (RLS).";
+            }
+            if (showToast) {
+                showToast(errMsg, "error", "⚠️", "Gagal Menghapus");
+            } else {
+                alert("Gagal menghapus item: " + errMsg);
+            }
         } finally {
             setIsDeleting(false);
         }

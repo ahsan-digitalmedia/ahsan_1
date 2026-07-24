@@ -6,8 +6,8 @@ import { supabaseData } from "@/lib/supabase";
 import { SUBJECT_LIST, FASE_LIST, DIMENSION_LIST, CLASS_LIST, normalizeSubject, normalizeSubjectList } from "@/lib/utils";
 
 export default function ModulAjarModal() {
-    const { state, updateState, processData } = useApp();
-    const { editingItem, modalMode } = state;
+    const { state, updateState, processData, showToast } = useApp();
+    const { editingItem, modalMode, config } = state;
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const formRef = React.useRef(null);
@@ -113,7 +113,8 @@ export default function ModulAjarModal() {
 
     const handleAiGenerate = async () => {
         if (!aiInput.topic || !aiInput.chapter || !aiInput.goal) {
-            alert("Harap isi Topik, Bab, dan Tujuan untuk generate AI");
+            if (showToast) showToast("Harap isi Topik, Bab, dan Tujuan untuk generate AI", "error", "⚠️");
+            else alert("Harap isi Topik, Bab, dan Tujuan untuk generate AI");
             return;
         }
 
@@ -143,7 +144,6 @@ export default function ModulAjarModal() {
             console.log("AI Generation Result:", result); // Debugging
 
             // Merging AI result into formData
-            // Merging AI result into formData
             setFormData(prev => ({
                 ...prev,
                 ...result,
@@ -153,13 +153,16 @@ export default function ModulAjarModal() {
                     : prev.modul_p5
             }));
 
+            if (showToast) showToast("Modul Ajar berhasil digenerate AI! ✨", "success", "✨", "Generasi Berhasil!");
+
             // Scroll to the top of the form after generation
             if (formRef.current) {
                 formRef.current.scrollIntoView({ behavior: 'smooth' });
             }
         } catch (error) {
             console.error("AI Generation Error:", error);
-            alert(error.message || "Gagal generate AI. Periksa koneksi atau API Key.");
+            if (showToast) showToast(error.message || "Gagal generate AI. Periksa koneksi atau API Key.", "error", "⚠️");
+            else alert(error.message || "Gagal generate AI. Periksa koneksi atau API Key.");
         } finally {
             setIsGenerating(false);
         }
@@ -191,14 +194,17 @@ export default function ModulAjarModal() {
 
             if (modalMode === 'edit' && editingItem) {
                 await supabaseData.update(editingItem.__backendId, payload);
+                if (showToast) showToast("Arsip Modul Ajar berhasil diperbarui!", "success", "📚", "Berhasil Diperbarui!");
             } else {
                 await supabaseData.create(payload);
+                if (showToast) showToast("Modul Ajar baru berhasil dipublikasikan!", "success", "🎉", "Berhasil Dipublikasikan!");
             }
             await processData();
             updateState({ showModal: false, editingItem: null });
         } catch (error) {
             console.error("Save modul error:", error);
-            alert("Gagal menyimpan modul ajar");
+            if (showToast) showToast("Gagal menyimpan modul ajar.", "error", "⚠️");
+            else alert("Gagal menyimpan modul ajar");
         } finally {
             setIsSubmitting(false);
         }
@@ -280,7 +286,7 @@ export default function ModulAjarModal() {
                                             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '0.7rem' }}
                                         >
                                             <option value="">PILIH MAPEL...</option>
-                                            {SUBJECT_LIST.map(s => (
+                                            {(config?.custom_subjects || SUBJECT_LIST).map(s => (
                                                 <option key={s} value={s}>{s.toUpperCase()}</option>
                                             ))}
                                         </select>
@@ -414,7 +420,7 @@ export default function ModulAjarModal() {
                                             required
                                         >
                                             <option value="">PILIH MAPEL...</option>
-                                            {SUBJECT_LIST.map(s => (
+                                            {(config?.custom_subjects || SUBJECT_LIST).map(s => (
                                                 <option key={s} value={s}>{s.toUpperCase()}</option>
                                             ))}
                                         </select>

@@ -6,7 +6,7 @@ import { supabaseData, attendanceOperations } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 export default function AttendancePage() {
-    const { state, updateState } = useApp();
+    const { state, updateState, showToast } = useApp();
     const { students, currentUser } = state;
 
     // State
@@ -338,7 +338,8 @@ export default function AttendancePage() {
     const handlePrint = async (type) => {
         setShowMenu(false);
         if (!selectedClass) {
-            alert("Pilih kelas terlebih dahulu");
+            if (showToast) showToast("Pilih kelas terlebih dahulu", "error", "⚠️");
+            else alert("Pilih kelas terlebih dahulu");
             return;
         }
 
@@ -346,7 +347,8 @@ export default function AttendancePage() {
             const html = await getAttendancePrintHTML(type);
             const printWindow = window.open('', '_blank');
             if (!printWindow) {
-                alert("Pop-up diblokir! Harap izinkan pop-up.");
+                if (showToast) showToast("Pop-up diblokir! Harap izinkan pop-up.", "error", "⚠️");
+                else alert("Pop-up diblokir! Harap izinkan pop-up.");
                 return;
             }
 
@@ -354,14 +356,16 @@ export default function AttendancePage() {
             printWindow.document.write('<script>window.onload = () => { window.print(); };</script>');
             printWindow.document.close();
         } catch (e) {
-            alert(e.message);
+            if (showToast) showToast(e.message, "error", "⚠️");
+            else alert(e.message);
         }
     };
 
     const handleDownloadPDF = async (type) => {
         setShowMenu(false);
         if (!selectedClass) {
-            alert("Pilih kelas terlebih dahulu");
+            if (showToast) showToast("Pilih kelas terlebih dahulu", "error", "⚠️");
+            else alert("Pilih kelas terlebih dahulu");
             return;
         }
 
@@ -378,9 +382,11 @@ export default function AttendancePage() {
             };
 
             await html2pdf().set(opt).from(html).save();
+            if (showToast) showToast("File PDF absensi berhasil diunduh!", "success", "📥", "Berhasil Unduh!");
         } catch (e) {
             console.error("PDF download error:", e);
-            alert("Gagal mengunduh PDF: " + e.message);
+            if (showToast) showToast("Gagal mengunduh PDF: " + e.message, "error", "⚠️");
+            else alert("Gagal mengunduh PDF: " + e.message);
         }
     };
 
@@ -406,11 +412,46 @@ export default function AttendancePage() {
         return c;
     }, [filteredStudents, attendanceData]);
 
+    const [isResetting, setIsResetting] = useState(false);
+
     const handleStatusClick = (studentId, status) => {
-        setAttendanceData(prev => ({
-            ...prev,
-            [studentId]: status
-        }));
+        setAttendanceData(prev => {
+            if (prev[studentId] === status) {
+                const next = { ...prev };
+                delete next[studentId];
+                return next;
+            }
+            return {
+                ...prev,
+                [studentId]: status
+            };
+        });
+    };
+
+    const handleResetDateAttendance = async () => {
+        if (!selectedClass || !selectedDate) return;
+
+        const dateFormatted = new Date(selectedDate).toLocaleDateString('id-ID', {
+            day: 'numeric', month: 'long', year: 'numeric'
+        });
+
+        const confirmMsg = `Apakah Anda yakin ingin MEMBATALKAN/MENGOSONGKAN seluruh data absensi tanggal ${dateFormatted} untuk Kelas ${selectedClass}?\n\nFitur ini digunakan jika Anda salah menginput absensi pada hari/tanggal yang tidak ada jam mengajar. Seluruh absensi pada tanggal ini akan terhapus.`;
+        if (!window.confirm(confirmMsg)) return;
+
+        setIsResetting(true);
+        try {
+            await attendanceOperations.deleteByDateAndClass(selectedDate, selectedClass, currentUser?.__backendId);
+            setAttendanceData({});
+            if (state.processData) await state.processData('attendance_reset');
+            if (showToast) showToast(`Data absensi tanggal ${dateFormatted} berhasil dibatalkan!`, "success", "🗑️", "Absensi Dibatalkan!");
+            else alert(`Data absensi tanggal ${dateFormatted} berhasil dibatalkan!`);
+        } catch (error) {
+            console.error("Error resetting attendance:", error);
+            if (showToast) showToast("Gagal membatalkan absensi. Coba lagi.", "error", "⚠️");
+            else alert("Gagal membatalkan absensi.");
+        } finally {
+            setIsResetting(false);
+        }
     };
 
     const markAllPresent = () => {
@@ -421,7 +462,8 @@ export default function AttendancePage() {
 
     const handleSave = async () => {
         if (!selectedClass) {
-            alert("Silakan pilih kelas terlebih dahulu!");
+            if (showToast) showToast("Silakan pilih kelas terlebih dahulu!", "error", "⚠️");
+            else alert("Silakan pilih kelas terlebih dahulu!");
             return;
         }
         setIsSaving(true);
@@ -438,13 +480,16 @@ export default function AttendancePage() {
 
             if (recordsToSave.length > 0) {
                 await attendanceOperations.upsert(recordsToSave);
-                alert("Data absensi berhasil disimpan! ✅");
+                if (showToast) showToast("Data absensi berhasil disimpan!", "success", "✅", "Berhasil Disimpan!");
+                else alert("Data absensi berhasil disimpan! ✅");
             } else {
-                alert("Tidak ada data untuk disimpan.");
+                if (showToast) showToast("Tidak ada data absensi untuk disimpan.", "info", "ℹ️");
+                else alert("Tidak ada data untuk disimpan.");
             }
         } catch (error) {
             console.error("Error saving attendance:", error);
-            alert("Gagal menyimpan data absensi. Coba lagi.");
+            if (showToast) showToast("Gagal menyimpan data absensi. Coba lagi.", "error", "⚠️");
+            else alert("Gagal menyimpan data absensi. Coba lagi.");
         } finally {
             setIsSaving(false);
         }
@@ -522,6 +567,15 @@ export default function AttendancePage() {
                         className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-[11px] uppercase tracking-widest shadow-md hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-70 whitespace-nowrap disabled:cursor-not-allowed"
                     >
                         {isSaving ? "PROSES..." : "SIMPAN DATA"}
+                    </button>
+
+                    <button
+                        onClick={handleResetDateAttendance}
+                        disabled={isResetting || !selectedClass || Object.keys(attendanceData).length === 0}
+                        className="px-5 py-3.5 bg-rose-50 text-rose-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-rose-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed border border-rose-100 group"
+                        title="Batalkan / hapus absensi jika salah input pada tanggal ini"
+                    >
+                        <span className="text-base group-hover:scale-110 transition-transform">🗑️</span> {isResetting ? "MEMBATALKAN..." : "BATALKAN ABSENSI"}
                     </button>
 
                     {/* Action Dropdown */}

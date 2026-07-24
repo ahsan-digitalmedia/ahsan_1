@@ -6,7 +6,7 @@ import { supabaseData } from "@/lib/supabase";
 import { CLASS_LIST, normalizeSubject } from "@/lib/utils";
 
 export default function TeacherJournalModal() {
-    const { state, updateState, processData } = useApp();
+    const { state, updateState, processData, showToast } = useApp();
     const { editingItem, modalMode, currentUser } = state;
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
@@ -43,14 +43,17 @@ export default function TeacherJournalModal() {
             };
             if (modalMode === 'edit' && editingItem) {
                 await supabaseData.update(editingItem.__backendId, payload);
+                if (showToast) showToast("Jurnal mengajar berhasil diperbarui!", "success", "👨‍🏫", "Berhasil Diperbarui!");
             } else {
                 await supabaseData.create(payload);
+                if (showToast) showToast("Jurnal mengajar berhasil diarsipkan!", "success", "🎉", "Berhasil Diarsipkan!");
             }
             await processData();
             updateState({ showModal: false, editingItem: null });
         } catch (error) {
             console.error("Save teacher journal error:", error);
-            alert("Gagal menyimpan jurnal mengajar");
+            if (showToast) showToast("Gagal menyimpan jurnal mengajar.", "error", "⚠️");
+            else alert("Gagal menyimpan jurnal mengajar");
         } finally {
             setIsSubmitting(false);
         }

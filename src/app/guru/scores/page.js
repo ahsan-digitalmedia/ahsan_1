@@ -6,8 +6,8 @@ import { scoreOperations } from "@/lib/supabase";
 import { cn, splitSubjects, SUBJECT_LIST } from "@/lib/utils";
 
 export default function ScoresPage() {
-    const { state, updateState } = useApp();
-    const { students, currentUser } = state;
+    const { state, updateState, showToast } = useApp();
+    const { students, currentUser, config } = state;
 
     const uniqueClasses = useMemo(() => {
         const classes = students.map(s => s.class).filter(c => c);
@@ -440,7 +440,7 @@ export default function ScoresPage() {
                             const teacherSubjects = splitSubjects(currentUser?.subject);
                             const isClassTeacher = teacherSubjects.includes("Guru Kelas") || teacherSubjects.length === 0;
 
-                            let subjectsToDisplay = isClassTeacher ? SUBJECT_LIST : teacherSubjects;
+                            let subjectsToDisplay = isClassTeacher ? (config?.custom_subjects || SUBJECT_LIST) : teacherSubjects;
 
                             // Compatibility mapping for display
                             const normalizedSubjects = subjectsToDisplay.map(s => {
@@ -563,12 +563,24 @@ export default function ScoresPage() {
                                 <p className="mt-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Memuat Data...</p>
                             </div>
                         )}
+
+                        {/* Hint Banner for Horizontal Scroll */}
+                        <div className="bg-indigo-50/80 border-b border-indigo-100/60 px-6 py-2.5 flex items-center justify-between text-[11px] font-bold text-indigo-700">
+                            <div className="flex items-center gap-2">
+                                <span className="text-base animate-pulse">👉</span>
+                                <span>Geser / scroll tabel ke kanan untuk melihat & mengisi semua kolom nilai (Formatif, Sumatif, PTS, PAS)</span>
+                            </div>
+                            <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold text-indigo-500 bg-white/90 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-wider shadow-sm">
+                                ↔️ Scroll Horizontal
+                            </span>
+                        </div>
+
                         <div className="overflow-x-auto w-full">
                             <table className="w-full text-left border-collapse min-w-max">
                                 <thead>
                                     <tr className="bg-slate-50/20 border-b border-slate-50">
-                                        <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 w-12 text-center tracking-widest">No</th>
-                                        <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 tracking-widest min-w-[250px]">Nama Lengkap Siswa</th>
+                                        <th className="sticky left-0 z-30 bg-slate-100/90 backdrop-blur-sm px-4 py-5 text-[10px] font-bold uppercase text-slate-500 w-[50px] min-w-[50px] text-center tracking-widest">No</th>
+                                        <th className="sticky left-[50px] z-30 bg-slate-100/90 backdrop-blur-sm px-6 py-5 text-[10px] font-bold uppercase text-slate-500 tracking-widest min-w-[240px] relative after:content-[''] after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[1px] after:bg-indigo-300/80 after:shadow-[1px_0_3px_rgba(79,70,229,0.08)]">Nama Lengkap Siswa</th>
                                         <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 text-center w-24 tracking-widest">NISN</th>
                                         <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 text-center w-16 tracking-widest">Kls</th>
 
@@ -583,23 +595,25 @@ export default function ScoresPage() {
                                         </th>
 
                                         {/* PTS PAS Headers */}
-                                        <th className="px-6 py-5 text-[10px] font-bold uppercase text-amber-500 text-center w-20 tracking-widest bg-amber-50/10">PTS</th>
-                                        <th className="px-6 py-5 text-[10px] font-bold uppercase text-rose-500 text-center w-20 tracking-widest bg-rose-50/10">PAS</th>
+                                        <th className="px-6 py-5 text-[10px] font-bold uppercase text-amber-500 text-center w-24 min-w-[80px] tracking-widest bg-amber-50/10">PTS</th>
+                                        <th className="px-6 py-5 text-[10px] font-bold uppercase text-rose-500 text-center w-24 min-w-[80px] tracking-widest bg-rose-50/10">PAS</th>
 
                                         {/* Final Headers */}
-                                        <th className="px-6 py-5 text-[10px] font-bold uppercase text-indigo-600 text-center w-24 bg-indigo-50/30 tracking-[0.2em]">NA</th>
+                                        <th className="px-6 py-5 text-[10px] font-bold uppercase text-indigo-600 text-center w-28 min-w-[90px] bg-indigo-50/30 tracking-[0.2em]">NA</th>
                                     </tr>
                                     <tr className="bg-slate-50/30 text-[9px] font-bold text-slate-400 text-center tracking-widest border-b border-slate-50">
-                                        <th colSpan={4}></th>
+                                        <th className="sticky left-0 z-30 bg-slate-100/90 backdrop-blur-sm"></th>
+                                        <th className="sticky left-[50px] z-30 bg-slate-100/90 backdrop-blur-sm relative after:content-[''] after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[1px] after:bg-indigo-300/80 after:shadow-[1px_0_3px_rgba(79,70,229,0.08)]"></th>
+                                        <th colSpan={2}></th>
 
                                         {/* Sub-headers Formatif */}
                                         {Array.from({ length: tpCount }).map((_, i) => (
-                                            <th key={`fh-${i}`} className="w-14 border-x border-slate-50/50 py-2">F{i + 1}</th>
+                                            <th key={`fh-${i}`} className="w-20 min-w-[72px] border-x border-slate-50/50 py-2">F{i + 1}</th>
                                         ))}
 
                                         {/* Sub-headers Sumatif */}
                                         {Array.from({ length: sumCount }).map((_, i) => (
-                                            <th key={`sh-${i}`} className="w-14 border-r border-slate-50/50 py-2">S{i + 1}</th>
+                                            <th key={`sh-${i}`} className="w-20 min-w-[72px] border-r border-slate-50/50 py-2">S{i + 1}</th>
                                         ))}
 
                                         <th className="bg-amber-50/5 py-2"></th>
@@ -613,8 +627,8 @@ export default function ScoresPage() {
                                         const calc = calculateNA(s.id);
                                         return (
                                             <tr key={s.id} className="hover:bg-slate-50/50 transition-colors group/row text-xs">
-                                                <td className="px-6 py-4 text-[11px] font-bold text-slate-300 text-center">{String(idx + 1).padStart(2, '0')}</td>
-                                                <td className="px-6 py-4">
+                                                <td className="sticky left-0 z-10 bg-white group-hover/row:bg-slate-50 transition-colors px-4 py-4 text-[11px] font-bold text-slate-400 text-center w-[50px] min-w-[50px]">{String(idx + 1).padStart(2, '0')}</td>
+                                                <td className="sticky left-[50px] z-10 bg-white group-hover/row:bg-slate-50 transition-colors px-6 py-4 min-w-[240px] relative after:content-[''] after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[1px] after:bg-indigo-300/80 after:shadow-[1px_0_3px_rgba(79,70,229,0.08)]">
                                                     <div className="flex items-center gap-3">
                                                         <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm group-hover/row:scale-110 transition-transform", ['gradient-blue', 'gradient-purple', 'gradient-pink', 'gradient-green', 'gradient-orange'][idx % 5])}>
                                                             {s.name?.charAt(0)}
@@ -634,7 +648,7 @@ export default function ScoresPage() {
                                                             type="number"
                                                             value={data[`f${i + 1}`] || ""}
                                                             onChange={e => handleScoreChange(s.id, `f${i + 1}`, e.target.value)}
-                                                            className="w-full h-10 text-center text-xs font-bold bg-slate-50/50 outline-none focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-300 rounded-lg border border-transparent transition-all placeholder:text-slate-200"
+                                                            className="w-full h-10 text-center text-xs font-bold bg-slate-50/50 outline-none focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-300 rounded-lg border border-transparent transition-all placeholder:text-slate-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none px-1"
                                                             placeholder="-"
                                                         />
                                                     </td>
@@ -647,7 +661,7 @@ export default function ScoresPage() {
                                                             type="number"
                                                             value={data[`s${i + 1}`] || ""}
                                                             onChange={e => handleScoreChange(s.id, `s${i + 1}`, e.target.value)}
-                                                            className="w-full h-10 text-center text-xs font-bold bg-slate-50/50 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-50 focus:border-emerald-300 rounded-lg border border-transparent transition-all placeholder:text-slate-200"
+                                                            className="w-full h-10 text-center text-xs font-bold bg-slate-50/50 outline-none focus:bg-white focus:ring-4 focus:ring-emerald-50 focus:border-emerald-300 rounded-lg border border-transparent transition-all placeholder:text-slate-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none px-1"
                                                             placeholder="-"
                                                         />
                                                     </td>
@@ -659,7 +673,7 @@ export default function ScoresPage() {
                                                         type="number"
                                                         value={data.pts || ""}
                                                         onChange={e => handleScoreChange(s.id, 'pts', e.target.value)}
-                                                        className="w-full h-10 text-center text-xs font-bold bg-slate-50/50 outline-none focus:bg-white focus:ring-4 focus:ring-amber-50 focus:border-amber-300 rounded-lg border border-transparent transition-all placeholder:text-slate-200"
+                                                        className="w-full h-10 text-center text-xs font-bold bg-slate-50/50 outline-none focus:bg-white focus:ring-4 focus:ring-amber-50 focus:border-amber-300 rounded-lg border border-transparent transition-all placeholder:text-slate-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none px-1"
                                                         placeholder="-"
                                                     />
                                                 </td>
@@ -668,7 +682,7 @@ export default function ScoresPage() {
                                                         type="number"
                                                         value={data.pas || ""}
                                                         onChange={e => handleScoreChange(s.id, 'pas', e.target.value)}
-                                                        className="w-full h-10 text-center text-xs font-bold bg-slate-50/50 outline-none focus:bg-white focus:ring-4 focus:ring-rose-50 focus:border-rose-300 rounded-lg border border-transparent transition-all placeholder:text-slate-200"
+                                                        className="w-full h-10 text-center text-xs font-bold bg-slate-50/50 outline-none focus:bg-white focus:ring-4 focus:ring-rose-50 focus:border-rose-300 rounded-lg border border-transparent transition-all placeholder:text-slate-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none px-1"
                                                         placeholder="-"
                                                     />
                                                 </td>

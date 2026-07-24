@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import ModalManager from "@/components/ModalManager";
 
 export default function GuruLayout({ children }) {
-    const { state, updateState, processData } = useApp();
+    const { state, updateState, processData, showToast } = useApp();
     const { currentUser, sidebarOpen, showNotifications, notifications, isLoading } = state;
     const pathname = usePathname();
     const router = useRouter();
@@ -47,6 +47,9 @@ export default function GuruLayout({ children }) {
     };
 
     const handleLogout = async () => {
+        if (showToast) {
+            showToast("Anda telah berhasil keluar dari akun.", "logout", "👋", "Berhasil Logout!", 3000);
+        }
         await supabase.auth.signOut();
         updateState({
             isLoggedIn: false,
@@ -54,7 +57,9 @@ export default function GuruLayout({ children }) {
             currentUserType: null,
             currentPage: "login",
         });
-        router.replace("/");
+        setTimeout(() => {
+            router.replace("/");
+        }, 700);
     };
 
     const menuItems = [

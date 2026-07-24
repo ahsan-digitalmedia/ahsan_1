@@ -4,6 +4,7 @@ import React from "react";
 import { useApp } from "@/context/AppContext";
 import TeacherModal from "../modals/TeacherModal";
 import DeleteConfirmModal from "../modals/DeleteConfirmModal";
+import ToastNotification from "../ui/ToastNotification";
 
 export default function AdminModalManager() {
     const { state } = useApp();
@@ -11,6 +12,7 @@ export default function AdminModalManager() {
 
     return (
         <>
+            <ToastNotification />
             {showModal && (
                 <>
                     {modalType === "teacher" && <TeacherModal />}

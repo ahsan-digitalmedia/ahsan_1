@@ -15,20 +15,37 @@ export default function GuruDashboard() {
         return !currentUser.nip || !currentUser.school_name || !currentUser.phone;
     }, [currentUser]);
 
+    // --- End of Year Check ---
+    const isEndOfYear = useMemo(() => {
+        const currentMonth = new Date().getMonth();
+        // 0-indexed, 5 = June, 6 = July
+        return currentMonth === 5 || currentMonth === 6;
+    }, []);
+
     // --- Data Filtering Logic (Ported from Legacy) ---
     const dashboardData = useMemo(() => {
         if (!currentUser) return null;
 
-        // Since data is already filtered correctly in AppContext and by RLS,
-        // we use the state directly for accurate statistics.
-        const classStudents = students;
-        const classAttendances = attendance;
-        const classScores = scores;
+        const isSuperAdmin = currentUser.role === 'admin';
+        const teacherBackendId = currentUser.__backendId;
+        const teacherAuthId = currentUser.auth_id || currentUser.id;
+
+        // Strict Ownership Filter Helper for Teacher Scope
+        const isTeacherData = (item) => {
+            if (isSuperAdmin) return true;
+            if (!item) return false;
+            const itemTeacherId = item.teacher_id || item.auth_id || item.content?.teacher_id;
+            return itemTeacherId === teacherBackendId || itemTeacherId === teacherAuthId;
+        };
+
+        const classStudents = (students || []).filter(isTeacherData);
+        const classAttendances = (attendance || []).filter(isTeacherData);
+        const classScores = (scores || []).filter(isTeacherData);
         const classJournals = [
             ...(journal || []),
             ...(journal_class || []),
             ...(journal_teacher || [])
-        ];
+        ].filter(isTeacherData);
 
         // Calculate Stats
         const today = new Date().toISOString().split('T')[0];
@@ -220,6 +237,32 @@ export default function GuruDashboard() {
                     >
                         Lengkapi Sekarang
                     </button>
+                </div>
+            )}
+
+            {/* End of Year Archive Alert (June & July) */}
+            {isEndOfYear && (
+                <div className="bg-white rounded-2xl border border-rose-100 p-6 mb-10 flex items-start md:items-center justify-between shadow-modern border-l-4 border-l-rose-500 animate-slideIn flex-col md:flex-row gap-6">
+                    <div className="flex items-start md:items-center gap-5">
+                        <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-inner group cursor-default">
+                            <span className="group-hover:animate-bounce">⚠️</span>
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-slate-800 text-sm tracking-tight mb-2">Peringatan Kenaikan Kelas / Akhir Tahun Ajaran!</h4>
+                            <div className="text-slate-500 text-xs font-medium space-y-1">
+                                <p>Tahun ajaran akan segera berganti. <strong>Sangat disarankan</strong> untuk mengunduh seluruh arsip data sebelum mengosongkan kelas.</p>
+                                <p>Jika Anda menghapus (mengosongkan) data siswa, maka <strong>seluruh riwayat absensi dan nilai akan ikut terhapus permanen.</strong></p>
+                                <p className="text-[10px] text-rose-400 mt-2 italic">*Pesan ini otomatis akan hilang setelah memasuki bulan Agustus.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <Link
+                        href="/guru/students"
+                        className="w-full md:w-auto px-6 py-3 bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-rose-100 hover:border-rose-300 transition-all shadow-sm active:scale-95 text-center shrink-0 whitespace-nowrap"
+                        title="Buka Halaman Daftar Siswa & Arsip"
+                    >
+                        KE HALAMAN SISWA
+                    </Link>
                 </div>
             )}
 
