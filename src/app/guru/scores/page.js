@@ -589,7 +589,7 @@ export default function ScoresPage() {
                                 <thead>
                                     <tr className="bg-slate-50/20 border-b border-slate-50">
                                         <th className="sticky left-0 z-30 bg-slate-100/90 backdrop-blur-sm px-4 py-5 text-[10px] font-bold uppercase text-slate-500 w-[50px] min-w-[50px] text-center tracking-widest">No</th>
-                                        <th className="sticky left-[50px] z-30 bg-slate-100/90 backdrop-blur-sm px-6 py-5 text-[10px] font-bold uppercase text-slate-500 tracking-widest min-w-[240px] relative after:content-[''] after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[1px] after:bg-indigo-300/80 after:shadow-[1px_0_3px_rgba(79,70,229,0.08)]">Nama Lengkap Siswa</th>
+                                        <th className="sticky left-[50px] z-30 bg-slate-100/90 backdrop-blur-sm px-4 py-5 text-[10px] font-bold uppercase text-slate-500 tracking-widest min-w-[170px] relative after:content-[''] after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[1px] after:bg-indigo-300/80 after:shadow-[1px_0_3px_rgba(79,70,229,0.08)]">Nama Lengkap Siswa</th>
                                         <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 text-center w-24 tracking-widest">NISN</th>
                                         <th className="px-6 py-5 text-[10px] font-bold uppercase text-slate-400 text-center w-16 tracking-widest">Kls</th>
 
@@ -637,12 +637,12 @@ export default function ScoresPage() {
                                         return (
                                             <tr key={s.id} className="hover:bg-slate-50/50 transition-colors group/row text-xs">
                                                 <td className="sticky left-0 z-10 bg-white group-hover/row:bg-slate-50 transition-colors px-4 py-4 text-[11px] font-bold text-slate-400 text-center w-[50px] min-w-[50px]">{String(idx + 1).padStart(2, '0')}</td>
-                                                <td className="sticky left-[50px] z-10 bg-white group-hover/row:bg-slate-50 transition-colors px-6 py-4 min-w-[240px] relative after:content-[''] after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[1px] after:bg-indigo-300/80 after:shadow-[1px_0_3px_rgba(79,70,229,0.08)]">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm group-hover/row:scale-110 transition-transform", ['gradient-blue', 'gradient-purple', 'gradient-pink', 'gradient-green', 'gradient-orange'][idx % 5])}>
+                                                <td className="sticky left-[50px] z-10 bg-white group-hover/row:bg-slate-50 transition-colors px-4 py-4 min-w-[170px] whitespace-nowrap relative after:content-[''] after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[1px] after:bg-indigo-300/80 after:shadow-[1px_0_3px_rgba(79,70,229,0.08)]">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm group-hover/row:scale-110 transition-transform shrink-0", ['gradient-blue', 'gradient-purple', 'gradient-pink', 'gradient-green', 'gradient-orange'][idx % 5])}>
                                                             {s.name?.charAt(0)}
                                                         </div>
-                                                        <span className="font-bold text-slate-800 tracking-tight text-[13px]">{s.name}</span>
+                                                        <span className="font-bold text-slate-800 tracking-tight text-[13px] whitespace-nowrap">{s.name}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center text-[10px] font-bold text-slate-400 tracking-widest">{s.nisn || '-'}</td>
