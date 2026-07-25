@@ -3,11 +3,11 @@ import { NextResponse } from "next/server";
 export async function POST(req) {
     try {
         const { topic, chapter, goal, approach, teacherInfo } = await req.json();
-        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+        const apiKey = (process.env.DEEPSEEK_API_KEY || process.env.GEMINI_API_KEY || "").trim();
 
         if (!apiKey) {
             return NextResponse.json(
-                { error: "API Key Gemini belum ditemukan. Silakan tambahkan GEMINI_API_KEY di file .env.local Anda." },
+                { error: "API Key AI belum ditemukan. Silakan tambahkan GEMINI_API_KEY atau DEEPSEEK_API_KEY di file .env.local Anda." },
                 { status: 500 }
             );
         }
@@ -27,10 +27,10 @@ export async function POST(req) {
 
             INSTRUKSI PENTING:
             1. Respon HARUS dalam format JSON murni.
-            2. JANGAN sertakan teks pembuka/penutup.
+            2. JANGAN sertakan teks pembuka/penutup atau penjelasan di luar JSON.
             3. Pastikan semua field terisi dengan konten pendidikan berkualitas secara ringkas & jelas (to the point).
             4. Pilih maksimal 4 item untuk "modul_p5" HANYA dari daftar ini: ["Keimanan & Ketakwaan", "Kewargaan", "Penalaran Kritis", "Kreativitas", "Kolaborasi", "Kemandirian", "Kesehatan", "Komunikasi"].
-            5. JANGAN menulis penjelasan bertele-tele agar panjang respon efisien dan sesuai kuota token.
+            5. JANGAN menulis penjelasan bertele-tele agar panjang respon efisien dan hemat token.
 
             STRUKTUR JSON:
             {
@@ -62,37 +62,55 @@ export async function POST(req) {
             }
         `;
 
-        // Detect API Provider
+        // Detect Provider
         const isOpenRouter = apiKey.startsWith("sk-or-");
-        const modelName = isOpenRouter ? "google/gemini-2.0-flash-lite-001" : "gemini-2.0-flash";
+        const isDeepSeekDirect = apiKey.startsWith("sk-") && !isOpenRouter;
 
         let apiUrl, fetchOptions;
 
         if (isOpenRouter) {
-            console.log(`Calling OpenRouter API with ${modelName} and fallbacks...`);
+            console.log("Calling OpenRouter API (DeepSeek/Free Model fallback)...");
             apiUrl = "https://openrouter.ai/api/v1/chat/completions";
             fetchOptions = {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
-                    'HTTP-Referer': 'https://aplikasi-guru.vercel.app', // Optional for OpenRouter
+                    'HTTP-Referer': 'https://aplikasi-guru.vercel.app',
                     'X-Title': 'Aplikasi Guru'
                 },
                 body: JSON.stringify({
-                    model: modelName,
+                    model: "deepseek/deepseek-chat",
                     models: [
-                        "google/gemini-2.0-flash-lite-001",
-                        "google/gemini-flash-1.5",
-                        "google/gemini-1.5-flash"
+                        "deepseek/deepseek-chat",
+                        "deepseek/deepseek-r1:free",
+                        "google/gemini-2.0-flash-exp:free",
+                        "meta-llama/llama-3.3-70b-instruct:free"
                     ],
                     messages: [{ role: "user", content: prompt }],
                     temperature: 0.7,
                     max_tokens: 1200
                 })
             };
+        } else if (isDeepSeekDirect) {
+            console.log("Calling DeepSeek Direct API...");
+            apiUrl = "https://api.deepseek.com/chat/completions";
+            fetchOptions = {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: [{ role: "user", content: prompt }],
+                    temperature: 0.7,
+                    max_tokens: 1200
+                })
+            };
         } else {
-            console.log(`Calling Gemini API v1beta with ${modelName}...`);
+            console.log("Calling Google Gemini Direct API...");
+            const modelName = "gemini-2.0-flash";
             apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
             fetchOptions = {
                 method: 'POST',
@@ -112,7 +130,7 @@ export async function POST(req) {
         const result = await apiResponse.json();
 
         if (!apiResponse.ok) {
-            console.error(`${isOpenRouter ? "OpenRouter" : "Gemini"} API Error Detail:`, JSON.stringify(result, null, 2));
+            console.error("AI API Error Detail:", JSON.stringify(result, null, 2));
 
             if (apiResponse.status === 429) {
                 return NextResponse.json(
@@ -121,24 +139,20 @@ export async function POST(req) {
                 );
             }
 
-            const rawErrorMessage = result.error?.message || "";
+            const rawErrorMessage = result.error?.message || result.message || "";
             if (isOpenRouter && (rawErrorMessage.includes("credits") || rawErrorMessage.includes("max_tokens"))) {
                 return NextResponse.json(
-                    { error: "Kredit OpenRouter Anda terbatas. Silakan coba lagi, batas token telah disesuaikan." },
+                    { error: "Kredit OpenRouter terbatas. Silakan coba lagi atau periksa saldo OpenRouter Anda." },
                     { status: 400 }
                 );
             }
 
-            const errorMessage = isOpenRouter
-                ? rawErrorMessage || "Gagal menghubungi OpenRouter"
-                : rawErrorMessage || "Gagal menghubungi Google AI";
-
-            throw new Error(errorMessage);
+            throw new Error(rawErrorMessage || "Gagal menghubungi layanan AI");
         }
 
         // Extract text based on provider
         let aiText = "";
-        if (isOpenRouter) {
+        if (isOpenRouter || isDeepSeekDirect) {
             aiText = result.choices?.[0]?.message?.content;
         } else {
             aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -153,15 +167,12 @@ export async function POST(req) {
         const firstBrace = extractedJson.indexOf('{');
         const lastBrace = extractedJson.lastIndexOf('}');
 
-
-
         if (firstBrace !== -1 && lastBrace !== -1) {
             extractedJson = extractedJson.substring(firstBrace, lastBrace + 1);
         }
 
         try {
             let data = JSON.parse(extractedJson);
-            // Robustness: if AI wrapped it in 'data' or similar
             if (data.data && !data.modul_topic) data = data.data;
             if (data.modul && !data.modul_topic) data = data.modul;
 
