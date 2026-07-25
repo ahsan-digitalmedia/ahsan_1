@@ -38,7 +38,7 @@ export default function StudentModal() {
         setIsSubmitting(true);
         try {
             // Ensure teacher_id is attached from the current logged-in user
-            const teacherId = state.currentUser?.__backendId;
+            const teacherId = state.currentUser?.auth_id || state.currentUser?.id || state.currentUser?.__backendId;
 
             // If new student, valid teacherId is mandatory for isolation
             if (modalMode !== 'edit' && !teacherId) {
