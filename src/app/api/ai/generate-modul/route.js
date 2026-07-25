@@ -64,12 +64,12 @@ export async function POST(req) {
 
         // Detect API Provider
         const isOpenRouter = apiKey.startsWith("sk-or-");
-        const modelName = isOpenRouter ? "google/gemini-2.0-flash-001" : "gemini-2.0-flash";
+        const modelName = isOpenRouter ? "google/gemini-2.0-flash-lite-001" : "gemini-2.0-flash";
 
         let apiUrl, fetchOptions;
 
         if (isOpenRouter) {
-            console.log(`Calling OpenRouter API with ${modelName}...`);
+            console.log(`Calling OpenRouter API with ${modelName} and fallbacks...`);
             apiUrl = "https://openrouter.ai/api/v1/chat/completions";
             fetchOptions = {
                 method: 'POST',
@@ -81,6 +81,11 @@ export async function POST(req) {
                 },
                 body: JSON.stringify({
                     model: modelName,
+                    models: [
+                        "google/gemini-2.0-flash-lite-001",
+                        "google/gemini-flash-1.5",
+                        "google/gemini-1.5-flash"
+                    ],
                     messages: [{ role: "user", content: prompt }],
                     temperature: 0.7,
                     max_tokens: 1200
