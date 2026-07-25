@@ -84,7 +84,6 @@ export async function POST(req) {
                     models: [
                         "deepseek/deepseek-chat",
                         "deepseek/deepseek-r1:free",
-                        "google/gemini-2.0-flash-exp:free",
                         "meta-llama/llama-3.3-70b-instruct:free"
                     ],
                     messages: [{ role: "user", content: prompt }],
