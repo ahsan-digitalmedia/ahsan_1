@@ -203,12 +203,50 @@ export const studentOperations = {
             payload.teacher_id = user.id;
         }
 
+        // 1. Check if a student record with matching NISN or NIS already exists for THIS teacher (teacher-scoped replace)
+        if (payload.teacher_id && (payload.nisn || payload.nis)) {
+            let query = supabase.from('students').select('id').eq('teacher_id', payload.teacher_id);
+            if (payload.nisn) {
+                query = query.eq('nisn', payload.nisn);
+            } else if (payload.nis) {
+                query = query.eq('nis', payload.nis);
+            }
+            const { data: existing } = await query.maybeSingle();
+
+            if (existing?.id) {
+                // Perform scoped replacement for this teacher's existing record
+                return await this.update(existing.id, payload);
+            }
+        }
+
+        // 2. Insert new record
         const { data, error } = await supabase
             .from('students')
             .insert([payload])
             .select();
 
-        if (error) throw error;
+        if (error) {
+            console.error("studentOperations.create insert error:", error);
+            let msg = error.message || 'Gagal menyimpan data siswa';
+
+            // Fallback check if unique constraint was hit on database
+            if (msg.includes('students_nisn_key') || msg.includes('students_teacher_nisn_key') || msg.includes('unique constraint')) {
+                if (payload.teacher_id && payload.nisn) {
+                    const { data: fallbackExisting } = await supabase
+                        .from('students')
+                        .select('id')
+                        .eq('teacher_id', payload.teacher_id)
+                        .eq('nisn', payload.nisn)
+                        .maybeSingle();
+                    if (fallbackExisting?.id) {
+                        return await this.update(fallbackExisting.id, payload);
+                    }
+                }
+                msg = `NISN "${payload.nisn || '-'}" sudah terdaftar untuk siswa lain di database.`;
+            }
+            throw new Error(`Gagal menambahkan siswa ${payload.name || ''}: ${msg}`);
+        }
+
         return data[0];
     },
 
@@ -298,7 +336,7 @@ export const studentOperations = {
             return clean;
         });
 
-        // 2. In-memory deduplication within the incoming payload
+        // 2. In-memory deduplication within the incoming payload (scoped per teacher)
         const nisnSeen = new Map();
         const nisSeen = new Map();
         const deduplicatedPayload = [];
@@ -419,7 +457,7 @@ export const studentOperations = {
                             let msg = singleErr.message || 'Gagal menyimpan data';
                             if (msg.includes('row-level security') || msg.includes('RLS')) {
                                 msg = 'Akses ditolak oleh keamanan database (RLS). Pastikan akun Guru Anda aktif.';
-                            } else if (msg.includes('students_nisn_key') || msg.includes('unique constraint')) {
+                            } else if (msg.includes('students_nisn_key') || msg.includes('students_teacher_nisn_key') || msg.includes('unique constraint')) {
                                 msg = `NISN "${cleanItem.nisn || '-'}" sudah terdaftar untuk siswa lain di database.`;
                             }
                             throw new Error(`Gagal menambahkan siswa ${cleanItem.name} (NISN: ${cleanItem.nisn || '-'}): ${msg}`);
