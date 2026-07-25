@@ -384,14 +384,18 @@ export const studentOperations = {
                 for (const student of toInsert) {
                     const cleanItem = await ensureTeacherId(cleanStudentRecord(student));
 
-                    // Try to find if student already exists by NISN or NIS
+                    // Try to find if student already exists by NISN or NIS (strictly for this teacher)
                     let existingRecord = null;
                     if (cleanItem.nisn) {
-                        const { data: foundByNisn } = await supabase.from('students').select('id').eq('nisn', cleanItem.nisn).maybeSingle();
+                        let qNisn = supabase.from('students').select('id').eq('nisn', cleanItem.nisn);
+                        if (authUid) qNisn = qNisn.eq('teacher_id', authUid);
+                        const { data: foundByNisn } = await qNisn.maybeSingle();
                         if (foundByNisn) existingRecord = foundByNisn;
                     }
                     if (!existingRecord && cleanItem.nis) {
-                        const { data: foundByNis } = await supabase.from('students').select('id').eq('nis', cleanItem.nis).maybeSingle();
+                        let qNis = supabase.from('students').select('id').eq('nis', cleanItem.nis);
+                        if (authUid) qNis = qNis.eq('teacher_id', authUid);
+                        const { data: foundByNis } = await qNis.maybeSingle();
                         if (foundByNis) existingRecord = foundByNis;
                     }
 
