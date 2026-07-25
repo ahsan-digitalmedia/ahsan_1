@@ -28,8 +28,9 @@ export async function POST(req) {
             INSTRUKSI PENTING:
             1. Respon HARUS dalam format JSON murni.
             2. JANGAN sertakan teks pembuka/penutup.
-            3. Pastikan semua field terisi dengan konten pendidikan berkualitas.
+            3. Pastikan semua field terisi dengan konten pendidikan berkualitas secara ringkas & jelas (to the point).
             4. Pilih maksimal 4 item untuk "modul_p5" HANYA dari daftar ini: ["Keimanan & Ketakwaan", "Kewargaan", "Penalaran Kritis", "Kreativitas", "Kolaborasi", "Kemandirian", "Kesehatan", "Komunikasi"].
+            5. JANGAN menulis penjelasan bertele-tele agar panjang respon efisien dan sesuai kuota token.
 
             STRUKTUR JSON:
             {
@@ -63,7 +64,7 @@ export async function POST(req) {
 
         // Detect API Provider
         const isOpenRouter = apiKey.startsWith("sk-or-");
-        const modelName = isOpenRouter ? "google/gemini-3.5-flash" : "gemini-2.0-flash";
+        const modelName = isOpenRouter ? "google/gemini-2.0-flash-001" : "gemini-2.0-flash";
 
         let apiUrl, fetchOptions;
 
@@ -82,7 +83,7 @@ export async function POST(req) {
                     model: modelName,
                     messages: [{ role: "user", content: prompt }],
                     temperature: 0.7,
-                    max_tokens: 2048
+                    max_tokens: 1200
                 })
             };
         } else {
@@ -95,7 +96,7 @@ export async function POST(req) {
                     contents: [{ parts: [{ text: prompt }] }],
                     generationConfig: {
                         temperature: 0.7,
-                        maxOutputTokens: 2048,
+                        maxOutputTokens: 1400,
                         responseMimeType: "application/json"
                     }
                 })
@@ -115,9 +116,17 @@ export async function POST(req) {
                 );
             }
 
+            const rawErrorMessage = result.error?.message || "";
+            if (isOpenRouter && (rawErrorMessage.includes("credits") || rawErrorMessage.includes("max_tokens"))) {
+                return NextResponse.json(
+                    { error: "Kredit OpenRouter Anda terbatas. Silakan coba lagi, batas token telah disesuaikan." },
+                    { status: 400 }
+                );
+            }
+
             const errorMessage = isOpenRouter
-                ? result.error?.message || "Gagal menghubungi OpenRouter"
-                : result.error?.message || "Gagal menghubungi Google AI";
+                ? rawErrorMessage || "Gagal menghubungi OpenRouter"
+                : rawErrorMessage || "Gagal menghubungi Google AI";
 
             throw new Error(errorMessage);
         }
