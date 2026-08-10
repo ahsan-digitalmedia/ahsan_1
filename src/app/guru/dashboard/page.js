@@ -39,8 +39,13 @@ export default function GuruDashboard() {
         };
 
         const classStudents = (students || []).filter(isTeacherData);
+        const classStudentIds = new Set(classStudents.map(s => s.id));
         const classAttendances = (attendance || []).filter(isTeacherData);
-        const classScores = (scores || []).filter(isTeacherData);
+        const classScores = (scores || []).filter(item => {
+            if (isTeacherData(item)) return true;
+            if (item?.student_id && classStudentIds.has(item.student_id)) return true;
+            return false;
+        });
         const classJournals = [
             ...(journal || []),
             ...(journal_class || []),
@@ -130,8 +135,42 @@ export default function GuruDashboard() {
         const accuracyPercentage = todayRelevantTotal > 0 ? Math.round((presentToday / todayRelevantTotal) * 100) : 0;
 
         // --- NEW: Calculate Grading Progress ---
-        const teacherSubjects = splitSubjects(currentUser?.subject);
+        const rawTeacherSubjects = splitSubjects(currentUser?.subject);
+        const isClassTeacher = rawTeacherSubjects.includes("Guru Kelas") || rawTeacherSubjects.length === 0;
+
+        // Collect all subject names from actual scores + configured subjects
+        const scoresSubjects = (classScores || []).map(sc => sc.subject || sc.content?.subject).filter(Boolean);
+        const baseSubjects = isClassTeacher ? (state.config?.custom_subjects || ["Bahasa Indonesia", "Matematika", "IPAS", "Pendidikan Pancasila", "PJOK", "Seni Budaya", "Bahasa Inggris", "Agama Islam"]) : rawTeacherSubjects;
+        const teacherSubjects = Array.from(new Set([...baseSubjects, ...scoresSubjects])).sort();
+
         const classes = Object.keys(studentCountByClass).sort();
+
+        const getFieldValue = (sc, key) => {
+            if (!sc) return 0;
+            let val = sc[key] ?? sc[`score_${key}`];
+            if (val === undefined && sc.scores && typeof sc.scores === 'object') {
+                val = sc.scores[key] ?? sc.scores[`score_${key}`];
+            }
+            if (val === undefined && sc.content && typeof sc.content === 'object') {
+                const c = sc.content;
+                val = c[key] ?? c[`score_${key}`];
+                if (val === undefined && c.scores && typeof c.scores === 'object') {
+                    val = c.scores[key] ?? c.scores[`score_${key}`];
+                }
+            }
+            const parsed = parseFloat(val);
+            return isNaN(parsed) ? 0 : parsed;
+        };
+
+        const isSubjectMatch = (scSubject, targetSubject) => {
+            if (!scSubject || !targetSubject) return false;
+            const s1 = scSubject.toLowerCase().trim();
+            const s2 = targetSubject.toLowerCase().trim();
+            if (s1 === s2) return true;
+            if (s1.includes("pjok") && s2.includes("pjok")) return true;
+            if (s1.includes("ipas") && s2.includes("ipas")) return true;
+            return false;
+        };
 
         const gradingProgress = [];
         classes.forEach(cls => {
@@ -140,10 +179,11 @@ export default function GuruDashboard() {
 
             teacherSubjects.forEach(subject => {
                 // Filter scores for this class and subject
-                const classSubjectScores = classScores.filter(sc =>
-                    (sc.class === cls || sc.student_class === cls) &&
-                    (sc.subject === subject)
-                );
+                const classSubjectScores = classScores.filter(sc => {
+                    const scCls = sc.class || sc.student_class || sc.content?.class;
+                    const scSubj = sc.subject || sc.content?.subject;
+                    return (scCls === cls) && isSubjectMatch(scSubj, subject);
+                });
 
                 const progress = {
                     className: cls,
@@ -153,24 +193,21 @@ export default function GuruDashboard() {
                 };
 
                 // Helper to count non-zero scores for a field
-                const countScores = (field) => {
-                    return classSubjectScores.filter(sc => {
-                        const val = parseFloat(sc[field] || 0);
-                        return val > 0;
-                    }).length;
+                const countScores = (key) => {
+                    return classSubjectScores.filter(sc => getFieldValue(sc, key) > 0).length;
                 };
 
                 // Formatif 1-4
                 for (let i = 1; i <= 4; i++) {
-                    progress.stats[`f${i}`] = countScores(`score_f${i}`);
+                    progress.stats[`f${i}`] = countScores(`f${i}`);
                 }
                 // Sumatif 1-4
                 for (let i = 1; i <= 4; i++) {
-                    progress.stats[`s${i}`] = countScores(`score_s${i}`);
+                    progress.stats[`s${i}`] = countScores(`s${i}`);
                 }
                 // PTS & PAS
-                progress.stats.pts = countScores('score_pts');
-                progress.stats.pas = countScores('score_pas');
+                progress.stats.pts = countScores('pts');
+                progress.stats.pas = countScores('pas');
 
                 gradingProgress.push(progress);
             });
