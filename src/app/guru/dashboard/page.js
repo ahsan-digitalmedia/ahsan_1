@@ -565,21 +565,15 @@ function QuickActionLink({ href, icon, color, label, desc }) {
     );
 }
 
-function ProgressBadge({ label, current, total, color }) {
+function ProgressBadge({ label, current, total }) {
     const isComplete = current >= total && total > 0;
     const isStarted = current > 0;
 
-    let bgColor = "bg-slate-100 text-slate-400 border-slate-200";
+    let bgColor = "bg-slate-100 text-slate-400 border-slate-200"; // Abu-abu: Belum ada nilai
     if (isComplete) {
-        if (color === 'blue') bgColor = "bg-blue-500 text-white border-blue-600 shadow-sm shadow-blue-100";
-        if (color === 'emerald') bgColor = "bg-emerald-500 text-white border-emerald-600 shadow-sm shadow-emerald-100";
-        if (color === 'amber') bgColor = "bg-amber-500 text-white border-amber-600 shadow-sm shadow-amber-100";
-        if (color === 'purple') bgColor = "bg-purple-500 text-white border-purple-600 shadow-sm shadow-purple-100";
+        bgColor = "bg-emerald-500 text-white border-emerald-600 font-black shadow-sm shadow-emerald-100"; // Hijau: Selesai
     } else if (isStarted) {
-        if (color === 'blue') bgColor = "bg-blue-50 border-blue-200 text-blue-600 animate-pulse-subtle";
-        if (color === 'emerald') bgColor = "bg-emerald-50 border-emerald-200 text-emerald-600 animate-pulse-subtle";
-        if (color === 'amber') bgColor = "bg-amber-50 border-amber-200 text-amber-600 animate-pulse-subtle";
-        if (color === 'purple') bgColor = "bg-purple-50 border-purple-200 text-purple-600 animate-pulse-subtle";
+        bgColor = "bg-amber-400 text-slate-900 border-amber-500 font-extrabold shadow-sm shadow-amber-100 animate-pulse-subtle"; // Kuning: Sedang proses
     }
 
     return (
