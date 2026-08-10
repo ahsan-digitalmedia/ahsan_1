@@ -1,16 +1,46 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export default function VisitorCounter() {
     const [stats, setStats] = useState({
-        totalVisitors: 1250,
-        todayVisitors: 84,
-        onlineVisitors: 6,
-        totalViews: 3840
+        totalVisitors: 0,
+        todayVisitors: 0,
+        onlineVisitors: 1,
+        totalViews: 0
     });
     const [loading, setLoading] = useState(true);
+
+    // Fetch real-time online presence (teachers active <90s + current active session)
+    const fetchOnlineCount = useCallback(async () => {
+        try {
+            const { data: onlineTeachers, error } = await supabase
+                .from('app_data')
+                .select('*')
+                .eq('type', 'teacher');
+
+            if (!error && onlineTeachers) {
+                const now = Date.now();
+                const activeTeachers = onlineTeachers.filter(t => {
+                    const lastSeen = t.content?.last_seen_at || t.last_seen_at;
+                    if (!lastSeen) return false;
+                    const diffSeconds = (now - new Date(lastSeen).getTime()) / 1000;
+                    return diffSeconds <= 90;
+                }).length;
+
+                // Minimum 1 (current visitor viewing the page) + online active teachers
+                const realOnlineCount = Math.max(1, activeTeachers);
+
+                setStats(prev => ({
+                    ...prev,
+                    onlineVisitors: realOnlineCount
+                }));
+            }
+        } catch (err) {
+            console.warn("Error fetching online presence:", err);
+        }
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
@@ -112,11 +142,12 @@ export default function VisitorCounter() {
         };
 
         initVisitorStats();
+        fetchOnlineCount();
 
+        // Auto-refresh real-time online presence every 10 seconds
         const onlineInterval = setInterval(() => {
             if (isMounted) {
-                const randomOnline = Math.floor(Math.random() * 6) + 5;
-                setStats(prev => ({ ...prev, onlineVisitors: randomOnline }));
+                fetchOnlineCount();
             }
         }, 10000);
 
@@ -124,7 +155,7 @@ export default function VisitorCounter() {
             isMounted = false;
             clearInterval(onlineInterval);
         };
-    }, []);
+    }, [fetchOnlineCount]);
 
     const formatNum = (num) => (num || 0).toLocaleString('id-ID');
 
