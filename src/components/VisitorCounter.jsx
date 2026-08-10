@@ -61,9 +61,9 @@ export default function VisitorCounter() {
                     .single();
 
                 let currentData = {
-                    total_visitors: 1250,
-                    total_views: 3840,
-                    daily_stats: { [todayKey]: 84 }
+                    total_visitors: 0,
+                    total_views: 0,
+                    daily_stats: { [todayKey]: 0 }
                 };
                 let backendId = null;
 
@@ -71,9 +71,9 @@ export default function VisitorCounter() {
                     backendId = data.id;
                     if (data.content) {
                         currentData = {
-                            total_visitors: data.content.total_visitors || 1250,
-                            total_views: data.content.total_views || 3840,
-                            daily_stats: data.content.daily_stats || { [todayKey]: 84 }
+                            total_visitors: data.content.total_visitors || 0,
+                            total_views: data.content.total_views || 0,
+                            daily_stats: data.content.daily_stats || { [todayKey]: 0 }
                         };
                     }
                 }
