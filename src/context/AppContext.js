@@ -103,14 +103,38 @@ export function AppProvider({ children }) {
             const { data: { user } } = await supabase.auth.getUser();
 
             if (user) {
-                const isSuperAdmin = user.email === 'admin@sekolah.id';
+                const userEmail = String(user.email || '').toLowerCase().trim();
+                const isSuperAdmin = userEmail === 'admin@sekolah.id';
 
-                // Fetch basic app data - let RLS handle the privacy filtering
+                // Fetch basic app data
                 let records = await supabaseData.fetchAll('app_data');
+
+                // Explicitly fetch ALL teacher records to prevent 1000-row cutoff issues in general app_data
+                const { data: allTeacherRecords, error: teacherFetchError } = await supabase
+                    .from('app_data')
+                    .select('*')
+                    .eq('type', 'teacher');
+
+                if (allTeacherRecords && !teacherFetchError) {
+                    const formattedTeachers = allTeacherRecords.map(d => ({
+                        ...d.content,
+                        __backendId: d.id,
+                        type: d.type,
+                        created_at: d.created_at,
+                        auth_id: d.auth_id || d.content?.auth_id || null
+                    }));
+
+                    // Merge formatted teachers into records, avoiding duplicates
+                    formattedTeachers.forEach(t => {
+                        if (!records.some(r => r.__backendId === t.__backendId)) {
+                            records.push(t);
+                        }
+                    });
+                }
 
                 // If teacher and no teacher record found (might be created by admin or auth_id not synced)
                 // We should ensure we can always find OUR OWN teacher record
-                if (!isSuperAdmin && !records.some(r => r.type === 'teacher' && r.email === user.email)) {
+                if (!isSuperAdmin && !records.some(r => r.type === 'teacher' && String(r.email).toLowerCase() === userEmail)) {
                     const { data: ownProfile, error: ownProfileError } = await supabase
                         .from('app_data')
                         .select('*')
