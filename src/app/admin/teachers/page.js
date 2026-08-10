@@ -1,17 +1,47 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { createClient } from '@supabase/supabase-js';
 import { supabase, supabaseData } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
+function checkOnlinePresence(teacher) {
+    if (!teacher || teacher.status !== 'active' || !teacher.last_seen_at) {
+        return { isOnline: false, label: 'Offline' };
+    }
+
+    const diffSeconds = Math.max(0, Math.floor((Date.now() - new Date(teacher.last_seen_at).getTime()) / 1000));
+
+    if (diffSeconds <= 90) {
+        return { isOnline: true, label: 'Sedang Aktif' };
+    } else if (diffSeconds < 3600) {
+        const mins = Math.floor(diffSeconds / 60);
+        return { isOnline: false, label: `Aktif ${mins}m lalu` };
+    } else if (diffSeconds < 86400) {
+        const hours = Math.floor(diffSeconds / 3600);
+        return { isOnline: false, label: `Aktif ${hours}j lalu` };
+    } else {
+        return { isOnline: false, label: 'Offline' };
+    }
+}
+
 export default function TeachersPage() {
     const { state, updateState, processData } = useApp();
     const { teachers } = state;
+    const [tick, setTick] = React.useState(0);
+
+    // Auto-tick every 10s to update presence timestamps
+    React.useEffect(() => {
+        const timer = setInterval(() => setTick(t => t + 1), 10000);
+        return () => clearInterval(timer);
+    }, []);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [filterStatus, setFilterStatus] = useState("all");
+    const [showAll, setShowAll] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     const filteredTeachers = useMemo(() => {
         return teachers.filter((t) => {
@@ -20,11 +50,23 @@ export default function TeachersPage() {
                 t.nip?.includes(searchQuery) ||
                 t.email?.toLowerCase().includes(searchQuery.toLowerCase());
 
-            const matchesStatus = filterStatus === "all" || t.status === filterStatus;
+            const isTeacherOnline = checkOnlinePresence(t).isOnline;
+            const matchesStatus = filterStatus === "all" ||
+                (filterStatus === "online" ? isTeacherOnline : t.status === filterStatus);
 
             return matchesSearch && matchesStatus;
         });
-    }, [teachers, searchQuery, filterStatus]);
+    }, [teachers, searchQuery, filterStatus, tick]);
+
+    // Reset to page 1 on search or filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filterStatus]);
+
+    const totalPages = Math.ceil(filteredTeachers.length / pageSize) || 1;
+    const displayedTeachers = showAll
+        ? filteredTeachers
+        : filteredTeachers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     const stats = {
         total: teachers.length,
@@ -176,10 +218,17 @@ export default function TeachersPage() {
                         className="w-full md:w-48 px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold uppercase text-slate-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 outline-none appearance-none tracking-widest cursor-pointer hover:border-indigo-100 transition-all"
                     >
                         <option value="all">⚡ Filter Status</option>
+                        <option value="online">🟢 SEDANG ONLINE</option>
                         <option value="pending">⏳ Perlu Aktivasi</option>
-                        <option value="active">🟢 AKTIF</option>
+                        <option value="active">✅ AKTIF</option>
                         <option value="inactive">🔴 NON-AKTIF</option>
                     </select>
+                    <button
+                        onClick={() => setShowAll(!showAll)}
+                        className="px-4 py-3 bg-indigo-50 text-indigo-600 rounded-xl text-[12px] font-bold uppercase tracking-wider hover:bg-indigo-100 transition-all border border-indigo-100 shrink-0"
+                    >
+                        {showAll ? "Tampilkan 10" : `Tampilkan Semua (${filteredTeachers.length})`}
+                    </button>
                 </div>
             </div>
 
@@ -189,6 +238,7 @@ export default function TeachersPage() {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 border-b border-slate-100">
+                                <th className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-12">No.</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Informasi Guru</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden lg:table-cell">Kontak & NIP</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden md:table-cell">Kelas & Mapel</th>
@@ -198,105 +248,119 @@ export default function TeachersPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {filteredTeachers.map((teacher, i) => (
-                                <tr key={teacher.__backendId || teacher.id} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm",
-                                                ['gradient-blue', 'gradient-indigo', 'gradient-purple', 'gradient-pink', 'gradient-orange'][i % 5]
-                                            )}>
-                                                {teacher.name?.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-slate-800">{teacher.name}</p>
-                                                <p className="text-[11px] text-slate-500 font-medium">{teacher.school_name || "SDN 1 PONCOWATI"}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 hidden lg:table-cell">
-                                        <p className="text-xs font-bold text-slate-700">{teacher.nip}</p>
-                                        <p className="text-[11px] text-slate-400 font-medium">{teacher.email}</p>
-                                    </td>
-                                    <td className="px-6 py-4 hidden md:table-cell">
-                                        <div className="flex flex-wrap gap-1">
-                                            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-100">{teacher.subject || "Guru Kelas"}</span>
-                                            <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-600 text-[10px] font-bold border border-purple-100">Kelas: {teacher.class || "-"}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        {teacher.auth_id ? (
-                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 uppercase tracking-tight">
-                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M2.166 4.9L10 9.154l7.834-4.254A1 1 0 0017 3H3a1 1 0 00-.834 1.9zM18 6.634V14a2 2 0 01-2 2H4a2 2 0 01-2-2V6.634l8 4.34 8-4.34z" clipRule="evenodd"></path></svg>
-                                                Connected
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100 uppercase tracking-tight">
-                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
-                                                No Auth
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight",
-                                            teacher.status === 'active' ? "bg-emerald-100 text-emerald-600" :
-                                                teacher.status === 'pending' ? "bg-orange-100 text-orange-600" : "bg-rose-100 text-rose-600"
-                                        )}>
-                                            {teacher.status === 'active' ? 'Aktif' : teacher.status === 'pending' ? 'Perlu Aktivasi' : 'Off'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => handleToggleStatus(teacher)}
-                                                className={cn(
-                                                    "p-2 rounded-lg transition-all shadow-sm active:scale-95",
-                                                    teacher.status === 'active'
-                                                        ? "text-rose-500 hover:bg-rose-50"
-                                                        : "text-emerald-500 hover:bg-emerald-50"
-                                                )}
-                                                title={teacher.status === 'active' ? "Non-aktifkan Akun" : "Aktifkan Akun"}
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    {teacher.status === 'active' ? (
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
-                                                    ) : (
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path>
+                            {displayedTeachers.map((teacher, i) => {
+                                const { isOnline, label: presenceLabel } = checkOnlinePresence(teacher);
+                                const globalIndex = showAll ? i + 1 : (currentPage - 1) * pageSize + i + 1;
+                                return (
+                                    <tr key={teacher.__backendId || teacher.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-4 py-4 text-xs font-bold text-slate-400 text-center">
+                                            {globalIndex}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative">
+                                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm",
+                                                        ['gradient-blue', 'gradient-indigo', 'gradient-purple', 'gradient-pink', 'gradient-orange'][i % 5]
+                                                    )}>
+                                                        {teacher.name?.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    {isOnline && (
+                                                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white"></span>
+                                                        </span>
                                                     )}
-                                                </svg>
-                                            </button>
-                                            {!teacher.auth_id && (
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-bold text-slate-800">{teacher.name}</p>
+                                                        {isOnline && (
+                                                            <span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
+                                                                ONLINE
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-500 font-medium">{teacher.school_name || "SDN 1 PONCOWATI"}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 hidden lg:table-cell">
+                                            <p className="text-xs font-bold text-slate-700">{teacher.nip}</p>
+                                            <p className="text-[11px] text-slate-400 font-medium">{teacher.email}</p>
+                                        </td>
+                                        <td className="px-6 py-4 hidden md:table-cell">
+                                            <p className="text-xs font-bold text-slate-700">{teacher.class || "Guru Kelas"}</p>
+                                            <p className="text-[11px] text-slate-400 font-medium">{teacher.subject || "Umum"}</p>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={cn("px-2.5 py-1 text-[9px] font-bold rounded-lg uppercase tracking-wider",
+                                                teacher.auth_id ? "bg-indigo-50 text-indigo-600 border border-indigo-100" : "bg-amber-50 text-amber-600 border border-amber-100"
+                                            )}>
+                                                {teacher.auth_id ? 'Terhubung' : 'Lokal'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={cn("px-2.5 py-1 text-[9px] font-bold rounded-lg uppercase tracking-widest flex items-center justify-center gap-1 mx-auto w-fit",
+                                                isOnline ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-slate-100 text-slate-500 border border-slate-200"
+                                            )}>
+                                                {isOnline && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
+                                                {presenceLabel}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-1">
                                                 <button
-                                                    onClick={() => handleSyncAuth(teacher)}
-                                                    className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all shadow-sm active:scale-95"
-                                                    title="Hubungkan ke Autentikasi"
+                                                    onClick={() => handleToggleStatus(teacher)}
+                                                    className={cn(
+                                                        "p-2 rounded-lg transition-all shadow-sm active:scale-95",
+                                                        teacher.status === 'active'
+                                                            ? "text-rose-500 hover:bg-rose-50"
+                                                            : "text-emerald-500 hover:bg-emerald-50"
+                                                    )}
+                                                    title={teacher.status === 'active' ? "Non-aktifkan Akun" : "Aktifkan Akun"}
                                                 >
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                                                        {teacher.status === 'active' ? (
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                                        ) : (
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path>
+                                                        )}
                                                     </svg>
                                                 </button>
-                                            )}
-                                            <button
-                                                onClick={() => updateState({ showModal: true, modalType: 'teacher', modalMode: 'edit', editingItem: teacher })}
-                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                                title="Edit Guru"
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                </svg>
-                                            </button>
-                                            <button
-                                                onClick={() => updateState({ showDeleteConfirm: true, deletingItem: { ...teacher, deleteType: 'teacher' } })}
-                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                title="Hapus Guru"
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                                {!teacher.auth_id && (
+                                                    <button
+                                                        onClick={() => handleSyncAuth(teacher)}
+                                                        className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all shadow-sm active:scale-95"
+                                                        title="Hubungkan ke Autentikasi"
+                                                    >
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => updateState({ showModal: true, modalType: 'teacher', modalMode: 'edit', editingItem: teacher })}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                                    title="Edit Guru"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => updateState({ showDeleteConfirm: true, deletingItem: { ...teacher, deleteType: 'teacher' } })}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                    title="Hapus Guru"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                     {filteredTeachers.length === 0 && (
@@ -305,6 +369,34 @@ export default function TeachersPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Pagination Footer */}
+                {filteredTeachers.length > 0 && !showAll && totalPages > 1 && (
+                    <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                        <span className="text-slate-500 font-medium">
+                            Menampilkan <strong className="text-slate-700">{(currentPage - 1) * pageSize + 1}</strong>–<strong className="text-slate-700">{Math.min(currentPage * pageSize, filteredTeachers.length)}</strong> dari <strong className="text-slate-700">{filteredTeachers.length}</strong> Guru
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <button
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white transition-all"
+                            >
+                                &laquo; Sebelum
+                            </button>
+                            <span className="font-bold text-slate-600 px-2">
+                                {currentPage} / {totalPages}
+                            </span>
+                            <button
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white transition-all"
+                            >
+                                Selanjutnya &raquo;
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

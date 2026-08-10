@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase, supabaseData } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/context/AppContext';
@@ -97,7 +98,12 @@ export default function LoginPage() {
                         </div>
 
                         <div>
-                            <label className="label-modern">Kata Sandi</label>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="label-modern mb-0">Kata Sandi</label>
+                                <Link href="/forgot-password" className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
+                                    Lupa Kata Sandi?
+                                </Link>
+                            </div>
                             <div className="relative">
                                 <input
                                     type={showPassword ? "text" : "password"}

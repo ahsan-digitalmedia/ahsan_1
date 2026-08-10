@@ -298,6 +298,45 @@ export function AppProvider({ children }) {
         }
     }, [processData]);
 
+    // Real-time Teacher Presence Heartbeat (Every 25 seconds)
+    useEffect(() => {
+        if (!state.isLoggedIn || !state.currentUser || !state.currentUser.__backendId) return;
+
+        const sendHeartbeat = async () => {
+            try {
+                const nowStr = new Date().toISOString();
+                // Update in-memory state
+                setState(prev => ({
+                    ...prev,
+                    teachers: prev.teachers.map(t =>
+                        t.__backendId === state.currentUser.__backendId
+                            ? { ...t, last_seen_at: nowStr }
+                            : t
+                    ),
+                    currentUser: prev.currentUser ? { ...prev.currentUser, last_seen_at: nowStr } : prev.currentUser
+                }));
+
+                // Update Supabase backend record
+                await supabase
+                    .from('app_data')
+                    .update({
+                        content: {
+                            ...state.currentUser,
+                            last_seen_at: nowStr
+                        },
+                        updated_at: nowStr
+                    })
+                    .eq('id', state.currentUser.__backendId);
+            } catch (err) {
+                console.error("Presence heartbeat error:", err);
+            }
+        };
+
+        sendHeartbeat();
+        const heartbeatInterval = setInterval(sendHeartbeat, 25000);
+        return () => clearInterval(heartbeatInterval);
+    }, [state.isLoggedIn, state.currentUser?.__backendId]);
+
 
     return (
         <AppContext.Provider value={{ state, updateState, processData, showToast }}>
