@@ -598,27 +598,73 @@ export const attendanceOperations = {
 
 export const scoreOperations = {
     async fetchAll(teacherId = null) {
-        let query = supabase
-            .from('scores')
-            .select('*')
-            .order('updated_at', { ascending: false });
+        let scoresData = [];
 
-        if (teacherId) {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user?.id && user.id !== teacherId) {
-                    query = query.or(`teacher_id.eq.${teacherId},teacher_id.eq.${user.id}`);
-                } else {
-                    query = query.eq('teacher_id', teacherId);
-                }
-            } catch (e) {
-                query = query.eq('teacher_id', teacherId);
+        let authUid = null;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            authUid = user?.id;
+        } catch (e) { }
+
+        const teacherIds = Array.from(new Set([teacherId, authUid].filter(id => id && id !== 'undefined')));
+
+        // 1. Query 'scores' table
+        try {
+            let query = supabase
+                .from('scores')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (teacherIds.length > 0) {
+                const orCond = teacherIds.map(id => `teacher_id.eq.${id}`).join(',');
+                query = query.or(orCond);
             }
+
+            const { data, error } = await query;
+            if (!error && data) {
+                data.forEach(record => {
+                    const scoreMap = record.scores || record.data || record.score || record.nilai || {};
+                    scoresData.push({
+                        ...record,
+                        ...(typeof scoreMap === 'object' ? scoreMap : {})
+                    });
+                });
+            }
+        } catch (e) {
+            console.warn("scoreOperations.fetchAll scores table query error:", e);
         }
 
-        const { data, error } = await query;
-        if (error) throw error;
-        return data;
+        // 2. Query 'app_data' table (type: 'scores')
+        try {
+            let query = supabase
+                .from('app_data')
+                .select('*')
+                .eq('type', 'scores');
+
+            if (teacherIds.length > 0) {
+                const authCond = teacherIds.map(id => `auth_id.eq.${id}`).join(',');
+                const teachCond = teacherIds.map(id => `content->>teacher_id.eq.${id}`).join(',');
+                query = query.or(`${authCond},${teachCond}`);
+            }
+
+            const { data: appData } = await query;
+            if (appData && appData.length > 0) {
+                appData.forEach(d => {
+                    const content = d.content || {};
+                    const scoreMap = content.scores || content.data || content.score || content.nilai || {};
+                    scoresData.push({
+                        ...content,
+                        __backendId: d.id,
+                        teacher_id: d.auth_id || content.teacher_id,
+                        ...(typeof scoreMap === 'object' ? scoreMap : {})
+                    });
+                });
+            }
+        } catch (e) {
+            console.warn("scoreOperations.fetchAll app_data table query error:", e);
+        }
+
+        return scoresData;
     },
 
     async fetchByClassAndSubject(className, subject, teacherId = null) {
