@@ -172,6 +172,7 @@ export function AppProvider({ children }) {
                     teacher: [],
                     attendance: [],
                     score: [],
+                    scores: [],
                     modul_ajar: [],
                     assignment: [],
                     journal: [],
