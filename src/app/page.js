@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import VisitorCounter from '@/components/VisitorCounter';
 
 export default function LandingPage() {
     const { state } = useApp();
@@ -231,6 +232,9 @@ export default function LandingPage() {
                     </div>
                 </div>
             </section>
+
+            {/* Visitor Traffic Counter Section */}
+            <VisitorCounter />
 
             {/* Footer */}
             <footer className="py-12 border-t border-slate-100">
